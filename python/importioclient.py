@@ -124,10 +124,13 @@ class IOClient:
 
     def poll(self):
         while True:
-            response = self.request("/meta/connect", path="connect")
-            for msg in response.json:
-                if msg["channel"] != self.messagingChannel : continue
-                self.processMessage(msg["data"])
+            try:
+                response = self.request("/meta/connect", path="connect", throw=False)
+                for msg in response.json:
+                    if msg["channel"] != self.messagingChannel : continue
+                    self.processMessage(msg["data"])
+            except:
+                logger.error("Error", exc_info=True)
         
     def processMessage(self, data):
         try:
@@ -165,8 +168,11 @@ if __name__ == "__main__":
         semaphore.acquire()
         
         def callback(query, message):
+            
             if message["type"] == "MESSAGE": 
-                print "Got message! %s" % message
+                print "Got data!"
+                print json.dumps(message["data"],indent = 4)
+                
             if query.finished(): semaphore.release()
             
         client.query({"input":{"query":"mac mini"},"connectorGuids":["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
