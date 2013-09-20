@@ -147,6 +147,23 @@ class ImportIO:
         self.queries[query["requestId"]] = Query(callback, query)
         self.request("/service/query", data={ "data":query })
 
+class _Latch(object):
+    def __init__(self, count=1):
+        self.count = count
+        self.lock = threading.Condition()
+
+    def countDown(self):
+        with self.lock:
+            self.count -= 1
+
+            if self.count <= 0:
+                self.lock.notifyAll()
+
+    def await(self):
+        with self.lock:
+            while self.count > 0:
+                self.lock.wait()
+
 if __name__ == "__main__":
     
     # Example code for using the client library
@@ -165,8 +182,8 @@ if __name__ == "__main__":
         
         client.connect()
         
-        semaphore = threading.Semaphore()
-        semaphore.acquire()
+        # use a latch to stop the program from exiting
+        latch = _Latch(3)
         
         def callback(query, message):
             
@@ -174,10 +191,14 @@ if __name__ == "__main__":
                 print "Got data!"
                 print json.dumps(message["data"],indent = 4)
                 
-            if query.finished(): semaphore.release()
+            if query.finished(): latch.countDown()
             
         client.query({"input":{"query":"mac mini"},"connectorGuids":["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
-        semaphore.acquire()
+        client.query({"input":{"query":"ubuntu"},"connectorGuids":["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
+        client.query({"input":{"query":"ibm"},"connectorGuids":["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
+        
+        # wait until all 3 queryies are finished
+        latch.await()
         
     except:
         logger.error("Error", exc_info=True)
