@@ -7,8 +7,9 @@ Dependencies: Python 2.7
 @author: import.io
 '''
 
-import threading, logging, uuid, json, urllib, urllib2, cookielib
+import threading, logging, uuid, json, urllib, urllib2, cookielib, gzip
 from cookielib import CookieJar, DefaultCookiePolicy
+from _pyio import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -93,11 +94,16 @@ class ImportIO:
         request = urllib2.Request(url)
         request.add_data(json.dumps([data]))
         request.add_header("Content-Type", "application/json;charset=UTF-8")
+        request.add_header('Accept-encoding', 'gzip')
         response = self.opener.open(request)
         if response.code != 200 :
             raise Exception("Connect failed, status %s" % response.code)
         
-        response.json = json.load(response)
+        if response.info().get('Content-Encoding') == 'gzip':
+            # need to buffer in memory - facepalm: http://bugs.python.org/issue914340
+            response.json = json.load(gzip.GzipFile(fileobj=BytesIO(response.read())))
+        else:
+            response.json = json.load(response)
         
         for msg in response.json:
             if "successful" in msg and msg["successful"] is not True :
@@ -146,59 +152,3 @@ class ImportIO:
         query["requestId"] = str(uuid.uuid4())
         self.queries[query["requestId"]] = Query(callback, query)
         self.request("/service/query", data={ "data":query })
-
-class _Latch(object):
-    def __init__(self, count=1):
-        self.count = count
-        self.lock = threading.Condition()
-
-    def countDown(self):
-        with self.lock:
-            self.count -= 1
-
-            if self.count <= 0:
-                self.lock.notifyAll()
-
-    def await(self):
-        with self.lock:
-            while self.count > 0:
-                self.lock.wait()
-
-if __name__ == "__main__":
-    
-    # Example code for using the client library
-    
-    try:
-        logging.basicConfig(level=logging.INFO)
-        
-        proxies = { "http":"192.168.56.1:8888"}
-        
-        # If using API Key
-        client = ImportIO(host="http://query.qa2.import.io:8888", userId="d08d14f3-6c98-44af-a301-f8d4288ecce3", apiKey="tMFNJzaaLe8sgYF9hFNhKI7akyiPLMhfu8U2omNVCVr5hqWWLyiQMApDDyUucQKF++BAoVi6jnGnavYqRKP/9g==", proxies=proxies)
-        
-        # If using username and password
-        # client = ImportIO(proxies=proxies)
-        # client.login("xxx", "xxx")
-        
-        client.connect()
-        
-        # use a latch to stop the program from exiting
-        latch = _Latch(3)
-        
-        def callback(query, message):
-            
-            if message["type"] == "MESSAGE": 
-                print "Got data!"
-                print json.dumps(message["data"],indent = 4)
-                
-            if query.finished(): latch.countDown()
-            
-        client.query({"input":{"query":"mac mini"},"connectorGuids":["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
-        client.query({"input":{"query":"ubuntu"},"connectorGuids":["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
-        client.query({"input":{"query":"ibm"},"connectorGuids":["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
-        
-        # wait until all 3 queryies are finished
-        latch.await()
-        
-    except:
-        logger.error("Error", exc_info=True)
