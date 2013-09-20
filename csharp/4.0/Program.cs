@@ -20,7 +20,7 @@ namespace MinimalCometLibrary
             
             // If using a username and password
             ImportIO io = new ImportIO();
-            io.Login("bam4d", "derpcore");
+            io.Login("xxx", "xxx");
             
 
             io.connect();
