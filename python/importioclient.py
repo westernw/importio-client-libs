@@ -107,6 +107,13 @@ class IOClient:
                 else:
                     logger.warn(msg)
         
+            if msg["channel"] != self.messagingChannel : continue
+                
+            try:
+                self.processMessage(msg["data"])
+            except:
+                logger.error("Error", exc_info=True)
+        
         return response
     
     def handshake(self):
@@ -124,13 +131,7 @@ class IOClient:
 
     def poll(self):
         while True:
-            try:
-                response = self.request("/meta/connect", path="connect", throw=False)
-                for msg in response.json:
-                    if msg["channel"] != self.messagingChannel : continue
-                    self.processMessage(msg["data"])
-            except:
-                logger.error("Error", exc_info=True)
+            self.request("/meta/connect", path="connect", throw=False)
         
     def processMessage(self, data):
         try:
