@@ -29,15 +29,12 @@ import lombok.val;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
-import org.codehaus.jackson.type.TypeReference;
-
 import com.importio.api.clientlite.data.ImportIOExecutingQuery;
 import com.importio.api.clientlite.data.Query;
 import com.importio.api.clientlite.data.RequestMessage;
 import com.importio.api.clientlite.data.ResponseMessage;
+import com.importio.api.clientlite.json.JacksonJsonImplementation;
+import com.importio.api.clientlite.json.JsonImplementation;
 
 @FieldDefaults(level=AccessLevel.PRIVATE) 
 @Log
@@ -52,7 +49,7 @@ public class ImportIO {
 	static final String USER_AGENT = "import-io-client-lite";
 	
 	final CookieManager cookieManager = new CookieManager();
-	final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	@Setter JsonImplementation jsonImplementation;
 	final ThreadLocal<CookieManager> cookieManagers = new ThreadLocal<CookieManager>();
 	final ConcurrentHashMap<String, ImportIOExecutingQuery> queries = new ConcurrentHashMap<String, ImportIOExecutingQuery>();
 	
@@ -74,7 +71,6 @@ public class ImportIO {
 		this.userId = userId;
 		this.apiKey = apiKey;
 		setupCookieHandler();
-		objectMapper.setSerializationInclusion(Inclusion.NON_NULL);
 	}
 
 	private void setupCookieHandler() {
@@ -165,7 +161,7 @@ public class ImportIO {
 			urlConnection.setRequestProperty("Accept-Encoding", "gzip");
 
 			urlConnection.setDoOutput(true); 
-			objectMapper.writeValue(urlConnection.getOutputStream(), data);
+			jsonImplementation.writeRequest(urlConnection.getOutputStream(), data);
 			
 			if ( urlConnection.getResponseCode() != 200 ) {
 				throw new IOException("Connect failed, status " + urlConnection.getResponseCode() );
@@ -173,7 +169,7 @@ public class ImportIO {
 			
 			val encoding = urlConnection.getContentEncoding();
 			
-			final List<ResponseMessage> list = objectMapper.readValue(makeInputStream(urlConnection, encoding), new TypeReference<List<ResponseMessage>>() {});
+			final List<ResponseMessage> list = jsonImplementation.readResponse(makeInputStream(urlConnection, encoding));
 			for (val msg : list ) {
 				if ( msg.getSuccessful() != null && ! msg.getSuccessful() ) {
 					val err = "Unsuccessful request:" + msg;
@@ -225,6 +221,12 @@ public class ImportIO {
 	}
 
 	public void connect() throws IOException {
+		
+		// default to jackson
+		if ( jsonImplementation == null ) {
+			jsonImplementation = new JacksonJsonImplementation();
+		}
+		
 		handshake();
 		request("/meta/subscribe", "subscribe", new RequestMessage().setSubscription(MESSAGING_CHANNEL), true);
 		val thread = new Thread(new Runnable() {
