@@ -1,11 +1,5 @@
 <?php
 
-
-function sign($url,$apiKey) {
-    $digest = base64_encode(hash_hmac("sha1", $url, base64_decode($apiKey), true));
-    return $digest;
-}
-
 $input = '{"input":{"???": "???"}}';
 $userGuid = "???";
 $apiKey = "???";
