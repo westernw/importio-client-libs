@@ -1,11 +1,13 @@
 package com.importio.api.clientlite.data;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Synchronized;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.java.Log;
 
@@ -61,14 +63,16 @@ public class ImportIOExecutingQuery {
 	 * the query that this handler wraps
 	 */
 	@Getter Query query;
+
+	ExecutorService executorService;
 	
 	/**
 	 * creates a query handler to manage the messaging and progress tracking of a query
 	 * @param query 
 	 * @param messageCallback
 	 */
-	public ImportIOExecutingQuery(Query query, MessageCallback messageCallback)
-	{
+	public ImportIOExecutingQuery(ExecutorService executorService, Query query, MessageCallback messageCallback) {
+		this.executorService = executorService;
 		this.query = query;
 		this.messageCallback = messageCallback;
 	}
@@ -77,12 +81,27 @@ public class ImportIOExecutingQuery {
 	/**
 	 * routes the messages recived from the server to the callback defined in {@link ImportIOConnection#executeQuery(Query, MessageCallback)
 	 * allows {@link this#isFinished()} to return true if there has been an unrecoverable error
+	 * @param executorService 
 	 * @param message
 	 */
-	public void onMessage(QueryMessage message) {
+	public void onMessage(final QueryMessage message) {
 		
 		log.log(Level.INFO, "Received {0} message", message.getType());
 		
+		final Progress progress = updateProgress(message);
+		
+		if(messageCallback != null) {
+			executorService.submit(new Runnable() {
+				public void run() {
+					messageCallback.onMessage(query, message, progress);
+				}
+			});
+		}
+		
+	}
+
+	@Synchronized
+	private Progress updateProgress(QueryMessage message) {
 		switch (message.getType()) {
 		case SPAWN:
 			jobsSpawned++;
@@ -111,9 +130,7 @@ public class ImportIOExecutingQuery {
 			finished = true;
 		}
 		
-		if(messageCallback != null) 
-			messageCallback.onMessage(this, message);
-		
+		return getProgress();
 	}
 	
 
@@ -121,7 +138,7 @@ public class ImportIOExecutingQuery {
 	 * returns a Progress object containing the progress information of the query
 	 */
 	public Progress getProgress() {
-		return new Progress(jobsSpawned, jobsStarted,jobsCompleted, messages.get());
+		return new Progress(finished, jobsSpawned, jobsStarted,jobsCompleted, messages.get());
 	}
 
 }

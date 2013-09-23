@@ -56,7 +56,7 @@ public class ImportIO {
 	final ThreadLocal<CookieManager> cookieManagers = new ThreadLocal<CookieManager>();
 	final ConcurrentHashMap<String, ImportIOExecutingQuery> queries = new ConcurrentHashMap<String, ImportIOExecutingQuery>();
 	
-	@Setter ExecutorService executorService = Executors.newCachedThreadPool();
+	@Setter ExecutorService executorService = Executors.newSingleThreadExecutor();
 	
 	@Setter String apiHost = "https://api.import.io";
 	@Setter String queryHost = "https://query.import.io";
@@ -192,7 +192,7 @@ public class ImportIO {
 				try {
 					processMessage(msg);
 				} catch ( Exception e ) {
-					log.severe("Processing message failed: "+msg);
+					log.log(Level.SEVERE, "Processing message failed: "+msg, e);
 				}
 			}
 			
@@ -204,15 +204,11 @@ public class ImportIO {
 	}
 
 	private void processMessage(final ResponseMessage msg) {		
-		executorService.submit(new Runnable() {
-			public void run() {
-				final ImportIOExecutingQuery query = queries.get(msg.getData().getRequestId());
-				query.onMessage(msg.getData());
-				if ( query.isFinished() ) {
-					queries.remove(msg.getData().getRequestId());
-				}
-			}
-		});
+		final ImportIOExecutingQuery query = queries.get(msg.getData().getRequestId());
+		query.onMessage(msg.getData());
+		if ( query.isFinished() ) {
+			queries.remove(msg.getData().getRequestId());
+		}
 	}
 
 	private InputStream makeInputStream(HttpURLConnection urlConnection, String encoding) throws IOException {
@@ -257,8 +253,12 @@ public class ImportIO {
 	
 	public void query(Query query, MessageCallback callback) throws IOException {
 		query.setRequestId(UUID.randomUUID().toString());
-		queries.put(query.getRequestId(), new ImportIOExecutingQuery(query, callback));
+		queries.put(query.getRequestId(), new ImportIOExecutingQuery(executorService, query, callback));
 		request("/service/query", "", new RequestMessage().setData(query), true);
+	}
+
+	public void shutdown() {
+		executorService.shutdown();
 	}
 	
 }

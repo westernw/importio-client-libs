@@ -1,6 +1,7 @@
 package com.importio.api.clientlite;
 
-import com.importio.api.clientlite.data.ImportIOExecutingQuery;
+import com.importio.api.clientlite.data.Progress;
+import com.importio.api.clientlite.data.Query;
 import com.importio.api.clientlite.data.QueryMessage;
 
 
@@ -13,7 +14,6 @@ public interface MessageCallback {
 	
 	/**
 	 * this method is called when a message is received from a query
-	 * @param message
 	 */
-	void onMessage(ImportIOExecutingQuery query, QueryMessage message);
+	void onMessage(Query query, QueryMessage message, Progress progress);
 }

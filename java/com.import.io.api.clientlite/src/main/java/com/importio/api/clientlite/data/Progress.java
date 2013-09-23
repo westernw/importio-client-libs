@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 @Data
 @FieldDefaults(level=AccessLevel.PRIVATE)
 public class Progress {
+	final boolean finished;
 	final int jobsSpawned;
 	final int jobsStarted;
 	final int jobsCompleted;
