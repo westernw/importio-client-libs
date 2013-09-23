@@ -7,7 +7,7 @@ Dependencies: Python 2.7
 @author: import.io
 '''
 
-import threading, logging, uuid, json, urllib, urllib2, cookielib, gzip
+import threading, logging, uuid, json, urllib, urllib2, cookielib, gzip, Queue
 from cookielib import CookieJar, DefaultCookiePolicy
 from _pyio import BytesIO
 
@@ -55,7 +55,7 @@ class ImportIO:
     The main IO client class.
     '''
     
-    def __init__(self, host="http://query.import.io", proxies={}, userId=None, apiKey=None):
+    def __init__(self, host="https://query.import.io", proxies={}, userId=None, apiKey=None):
         self.host = host
         self.proxies = proxies
         self.cookies = {}
@@ -68,8 +68,9 @@ class ImportIO:
         self.apiKey = apiKey
         self.cj = cookielib.CookieJar()
         self.opener = urllib2.build_opener(urllib2.ProxyHandler(self.proxies), urllib2.HTTPCookieProcessor(self.cj))
+        self.queue = Queue.Queue()
     
-    def login(self, username, password, host="http://api.import.io"):
+    def login(self, username, password, host="https://api.import.io"):
         r = self.opener.open("%s/auth/login" % host, urllib.urlencode( {'username': username, 'password': password} ) ) 
 
         if r.code is not 200:
@@ -115,10 +116,7 @@ class ImportIO:
         
             if msg["channel"] != self.messagingChannel : continue
                 
-            try:
-                self.processMessage(msg["data"])
-            except:
-                logger.error("Error", exc_info=True)
+            self.queue.put(msg["data"])
         
         return response
     
@@ -134,6 +132,17 @@ class ImportIO:
         t = threading.Thread(target=self.poll, args=())
         t.daemon = True
         t.start()
+        
+        t2 = threading.Thread(target=self.pollQueue, args=())
+        t2.daemon = True
+        t2.start()
+
+    def pollQueue(self):
+        while True:
+            try:
+                self.processMessage(self.queue.get())
+            except:
+                logger.error("Error", exc_info=True)
 
     def poll(self):
         while True:
