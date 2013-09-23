@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 proxies = { "http":"192.168.56.1:8888"}
 
 # If using API Key
-# client = ImportIO(host="http://query.qa2.import.io:8888", userId="d08d14f3-6c98-44af-a301-f8d4288ecce3", apiKey="tMFNJzaaLe8sgYF9hFNhKI7akyiPLMhfu8U2omNVCVr5hqWWLyiQMApDDyUucQKF++BAoVi6jnGnavYqRKP/9g==", proxies=proxies)
+# client = ImportIO(userId="d08d14f3-6c98-44af-a301-f8d4288ecce3", apiKey="tMFNJzaaLe8sgYF9hFNhKI7akyiPLMhfu8U2omNVCVr5hqWWLyiQMApDDyUucQKF++BAoVi6jnGnavYqRKP/9g==", proxies=proxies)
 
 # If using username and password
 client = importio.ImportIO(proxies=proxies)
