@@ -1,9 +1,15 @@
 require './importio.rb'
 require 'json' 
 
-client = ImportIO::new("d9273f3-6c98-44af-a301-f8d4288ebbe3","tMFNJzytLe8sgYF1869csM8843iPLMhfu8U2omNVCVr5hqWWLyiQMApDDyUucQKF++BAoVi6jnGnavYqRKP/9g==","http://query.qa2.import.io:8888")
-#client.proxy("192.168.56.1",8888)
-#client.login("xxxx", "xxxx", "http://api.import.io")
+# API key
+client = ImportIO::new("d9273f3-6c98-44af-a301-f8d4288ebbe3","tMFNJzytLe8sgYF1869csM8843iPLMhfu8U2omNVCVr5hqWWLyiQMApDDyUucQKF++BAoVi6jnGnavYqRKP/9g==")
+# proxy if you need
+# client.proxy("192.168.56.1",8888)
+
+# Alternatively, username and password
+# client = ImportIO::new
+# client.login("xxxx", "xxxx")
+
 client.connect()
 
 callback = lambda do |query, message|
