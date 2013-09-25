@@ -10,6 +10,7 @@ using System.Net;
 // Download the Newtonsoft JSON library here http://james.newtonking.com/projects/json-net.aspx
 using Newtonsoft.Json;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace MinimalCometLibrary
 {
@@ -82,6 +83,8 @@ namespace MinimalCometLibrary
         CookieContainer cookieContainer = new CookieContainer();
 
         Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
+
+        private BlockingCollection<Dictionary<String, Object>> messageQueue = new BlockingCollection<Dictionary<string,object>>();
 
         public ImportIO(String host = "http://query.import.io", Guid userGuid = default(Guid), String apiKey = null)
         {
@@ -187,7 +190,10 @@ namespace MinimalCometLibrary
                         if (!responseDict["channel"].Equals(messagingChannel)) continue;
 
                         if (responseDict.ContainsKey("data"))
-                            ProcessMessage(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<String, Object>>());
+                        {
+                            messageQueue.Add(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<String, Object>>());
+                        }
+                            
                     }
 
                     return responseList;
@@ -215,6 +221,8 @@ namespace MinimalCometLibrary
             Request("/meta/subscribe", subscribeData);
 
             new Thread(new ThreadStart(Poll)).Start();
+
+            new Thread(new ThreadStart(PollQueue)).Start();
         }
 
         private void Poll()
@@ -222,6 +230,14 @@ namespace MinimalCometLibrary
             while (true)
             {
                 Request("/meta/connect", null, "connect", false);
+            }
+        }
+
+        private void PollQueue()
+        {
+            while (true)
+            {
+                ProcessMessage(messageQueue.Take());
             }
         }
 
