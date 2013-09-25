@@ -6,7 +6,6 @@
 //  Copyright (c) 2013 importio. All rights reserved.
 //
 
-#import "example.h"
 #import "Importio.h"
 @implementation Example
 
