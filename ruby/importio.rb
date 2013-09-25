@@ -174,6 +174,8 @@ class ImportIO
     
     request("/meta/subscribe", "", {"subscription"=>@messagingChannel})
 
+    connected = true
+
     @threads = []
     @threads << Thread.new(self) { |io|
       io.poll
@@ -183,6 +185,11 @@ class ImportIO
     }
   end
 
+  def disconnect
+    request("/meta/disconnect");
+    connected = false
+  end
+
   def stop
     @threads.each { |thread| 
       thread.terminate
@@ -190,7 +197,7 @@ class ImportIO
   end
   
   def join
-    while true
+    while connected
       if @queries.length == 0
         stop
         return
@@ -200,7 +207,7 @@ class ImportIO
   end
 
   def pollQueue
-    while true
+    while connected
       begin
         processMessage @queue.pop
       rescue => exception
@@ -210,7 +217,7 @@ class ImportIO
   end
 
   def poll
-    while true
+    while connected
       request("/meta/connect", "connect", {}, false)
     end
   end

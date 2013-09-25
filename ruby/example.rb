@@ -22,3 +22,5 @@ end
 client.query({"input"=>{"query"=>"mac mini"},"connectorGuids"=>["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
 
 client.join
+
+client.disconnect
