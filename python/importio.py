@@ -17,7 +17,7 @@ class Query:
     '''
     Represents a single query into the import.io platform
     '''
-    
+
     def __init__(self, callback, query):
         self.query = query
         self.jobsSpawned = 0
@@ -69,6 +69,7 @@ class ImportIO:
         self.cj = cookielib.CookieJar()
         self.opener = urllib2.build_opener(urllib2.ProxyHandler(self.proxies), urllib2.HTTPCookieProcessor(self.cj))
         self.queue = Queue.Queue()
+        self.isConnected = False
     
     def login(self, username, password, host="https://api.import.io"):
         r = self.opener.open("%s/auth/login" % host, urllib.urlencode( {'username': username, 'password': password} ) ) 
@@ -129,6 +130,7 @@ class ImportIO:
         
         self.request("/meta/subscribe", data={"subscription":self.messagingChannel})
 
+        self.isConnected = True
         t = threading.Thread(target=self.poll, args=())
         t.daemon = True
         t.start()
@@ -136,16 +138,20 @@ class ImportIO:
         t2 = threading.Thread(target=self.pollQueue, args=())
         t2.daemon = True
         t2.start()
+        
+
+    def disconnect(self):
+        self.request("/meta/disconnect", throw=False)
 
     def pollQueue(self):
-        while True:
+        while self.isConnected:
             try:
                 self.processMessage(self.queue.get())
             except:
                 logger.error("Error", exc_info=True)
 
     def poll(self):
-        while True:
+        while self.isConnected:
             self.request("/meta/connect", path="connect", throw=False)
         
     def processMessage(self, data):
