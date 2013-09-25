@@ -7,7 +7,6 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <pthread.h>
 
 @interface Queue : NSMutableArray {
     NSCondition* conditionLock;

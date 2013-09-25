@@ -6,7 +6,6 @@
 //  Copyright (c) 2013 importio. All rights reserved.
 //
 
-#import "example.h"
 #import "Importio.h"
 @implementation Example
 
@@ -17,7 +16,7 @@
     
     // To log in with username and password
     Importio* client = [[Importio alloc] init];
-    [client login:@"bam4d" withPassword:@"importiome123!" withHost:@"https://api.import.io"];
+    [client login:@"xxx" withPassword:@"xxx" withHost:@"https://api.import.io"];
     
     
     void (^callback)(Query*,NSDictionary* data) = ^(Query* query, NSDictionary* data){
