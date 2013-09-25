@@ -19,8 +19,11 @@
     // To log in with username and password
     Importio* client = [[Importio alloc] init];
     [client login:@"xxx" withPassword:@"xxx" withHost:@"https://api.import.io"];
+<<<<<<< Updated upstream
+=======
     
     int __block completedqueries;
+>>>>>>> Stashed changes
     
     NSCondition* querylock = [[NSCondition alloc] init];
     
