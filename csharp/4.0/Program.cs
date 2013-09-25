@@ -23,7 +23,7 @@ namespace MinimalCometLibrary
             io.Login("xxx", "xxx");
             
 
-            io.connect();
+            io.Connect();
             Dictionary<String,Object> query1 = new Dictionary<string,object>();
             query1.Add("input",new Dictionary<String,String>() {{ "query","mac mini" }});
             query1.Add("connectorGuids", new List<String>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
@@ -43,6 +43,8 @@ namespace MinimalCometLibrary
             io.DoQuery(query3, HandleQuery);
 
             countdownLatch.Wait();
+
+            io.Disconnect();
         }
 
         private static void HandleQuery(Query query, Dictionary<String,Object> message)

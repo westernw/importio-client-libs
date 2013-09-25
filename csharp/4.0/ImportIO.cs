@@ -80,6 +80,8 @@ namespace MinimalCometLibrary
         private int msgId = 0;
         private String clientId;
 
+        private Boolean isConnected;
+
         CookieContainer cookieContainer = new CookieContainer();
 
         Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
@@ -173,31 +175,40 @@ namespace MinimalCometLibrary
             using (Stream dataStream = request.GetRequestStream())
             {
                 dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
-                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-
-                using (StreamReader responseStream = new StreamReader(response.GetResponseStream()))
+                try
                 {
-                    String responseJson = responseStream.ReadToEnd();
-                    List<Dictionary<String, Object>> responseList = JsonConvert.DeserializeObject<List<Dictionary<String, Object>>>(responseJson);
-                    foreach (Dictionary<String, Object> responseDict in responseList)
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+
+                    using (StreamReader responseStream = new StreamReader(response.GetResponseStream()))
                     {
-                        if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
+                        String responseJson = responseStream.ReadToEnd();
+                        List<Dictionary<String, Object>> responseList = JsonConvert.DeserializeObject<List<Dictionary<String, Object>>>(responseJson);
+                        foreach (Dictionary<String, Object> responseDict in responseList)
                         {
-                            if (doThrow)
-                                throw new Exception("Unsucessful request");
+                            if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
+                            {
+                                if (doThrow)
+                                    throw new Exception("Unsucessful request");
+                            }
+
+                            if (!responseDict["channel"].Equals(messagingChannel)) continue;
+
+                            if (responseDict.ContainsKey("data"))
+                            {
+                                messageQueue.Add(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<String, Object>>());
+                            }
+
                         }
 
-                        if (!responseDict["channel"].Equals(messagingChannel)) continue;
-
-                        if (responseDict.ContainsKey("data"))
-                        {
-                            messageQueue.Add(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<String, Object>>());
-                        }
-                            
+                        return responseList;
                     }
-
-                    return responseList;
                 }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error occurred {0}", e.Message);
+                    return new List<Dictionary<String, Object>>();
+                }
+                
             }
         }
 
@@ -212,7 +223,7 @@ namespace MinimalCometLibrary
             clientId = (String)responseList[0]["clientId"];
         }
 
-        public void connect()
+        public void Connect()
         {
             Handshake();
 
@@ -220,14 +231,22 @@ namespace MinimalCometLibrary
             subscribeData.Add("subscription", messagingChannel);
             Request("/meta/subscribe", subscribeData);
 
+            isConnected = true;
+
             new Thread(new ThreadStart(Poll)).Start();
 
             new Thread(new ThreadStart(PollQueue)).Start();
         }
 
+        public void Disconnect()
+        {
+            Request("/meta/disconnect", null, "", true);
+            isConnected = false;
+        }
+
         private void Poll()
         {
-            while (true)
+            while (isConnected)
             {
                 Request("/meta/connect", null, "connect", false);
             }
@@ -235,7 +254,7 @@ namespace MinimalCometLibrary
 
         private void PollQueue()
         {
-            while (true)
+            while (isConnected)
             {
                 ProcessMessage(messageQueue.Take());
             }
