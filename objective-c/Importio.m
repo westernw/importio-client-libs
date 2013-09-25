@@ -194,7 +194,7 @@ NSMutableDictionary* queries;
 - (void) disconnect
 {
     [self request:@"/meta/disconnect" withPath:@"" withData:[[NSMutableDictionary alloc] init] withThrows:TRUE];
-    _connected = TRUE;
+    _connected = FALSE;
 }
 
 - (void) pollQueue
