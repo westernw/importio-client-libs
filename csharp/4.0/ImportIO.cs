@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace MinimalCometLibrary
 {
-    delegate void QueryHandler(Query query, Dictionary<String,Object> data);
+    delegate void QueryHandler(Query query, Dictionary<String, Object> data);
 
     class Query
     {
@@ -22,24 +22,24 @@ namespace MinimalCometLibrary
         int jobsSpawned = 0;
         private bool finished = false;
 
-        public bool isFinished { get { return finished;} set { finished=value; }}
+        public bool isFinished { get { return finished; } set { finished = value; } }
         public QueryHandler queryCallback;
 
         Dictionary<String, Object> queryInput;
 
-        public Query(Dictionary<String,Object> queryInput, QueryHandler queryCallback) 
+        public Query(Dictionary<String, Object> queryInput, QueryHandler queryCallback)
         {
             this.queryInput = queryInput;
             this.queryCallback = queryCallback;
         }
 
-        public void OnMessage(Dictionary<String,Object> data) 
+        public void OnMessage(Dictionary<String, Object> data)
         {
             String messageType = (String)data["type"];
 
             Console.WriteLine((String)data["type"]);
 
-            switch(messageType) 
+            switch (messageType)
             {
                 case "SPAWN":
                     jobsSpawned++;
@@ -88,29 +88,29 @@ namespace MinimalCometLibrary
             this.userGuid = userGuid;
             this.apiKey = apiKey;
 
-            this.url = host + "/query/comet";
+            this.url = host + "/query/comet/";
             clientId = null;
         }
 
         public void Login(String username, String password, String host = "http://api.import.io")
         {
             Console.WriteLine("Logging in");
-            String loginParams = "username="+HttpUtility.UrlEncode(username)+"&password="+HttpUtility.UrlEncode(password);
+            String loginParams = "username=" + HttpUtility.UrlEncode(username) + "&password=" + HttpUtility.UrlEncode(password);
             String searchUrl = host + "/auth/login";
             HttpWebRequest loginRequest = (HttpWebRequest)WebRequest.Create(searchUrl);
-            
+
             loginRequest.Method = "POST";
             loginRequest.ContentType = "application/x-www-form-urlencoded";
             loginRequest.ContentLength = loginParams.Length;
 
             loginRequest.CookieContainer = cookieContainer;
 
-            using(Stream dataStream = loginRequest.GetRequestStream())
+            using (Stream dataStream = loginRequest.GetRequestStream())
             {
-                dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(loginParams),0, loginParams.Length);
+                dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(loginParams), 0, loginParams.Length);
 
                 HttpWebResponse loginResponse = (HttpWebResponse)loginRequest.GetResponse();
-                
+
 
                 if (loginResponse.StatusCode != HttpStatusCode.OK)
                 {
@@ -118,15 +118,15 @@ namespace MinimalCometLibrary
                 }
                 else
                 {
-                    foreach(Cookie cookie in loginResponse.Cookies) 
+                    foreach (Cookie cookie in loginResponse.Cookies)
                     {
-                        if(cookie.Name.Equals("AUTH"))
+                        if (cookie.Name.Equals("AUTH"))
                         {
                             // Login was successful
                             Console.WriteLine("Login Successful");
                         }
                     }
-                        
+
                 }
             }
         }
@@ -134,33 +134,33 @@ namespace MinimalCometLibrary
         public List<Dictionary<String, Object>> Request(String channel, Dictionary<String, Object> data = null, String path = "", Boolean doThrow = true)
         {
             Dictionary<String, Object> dataPacket = new Dictionary<String, Object>();
-            dataPacket.Add("channel",channel);
-            dataPacket.Add("connectionType","long-polling");
+            dataPacket.Add("channel", channel);
+            dataPacket.Add("connectionType", "long-polling");
             dataPacket.Add("id", (msgId++).ToString());
-            
-            if(this.clientId!=null)
-                dataPacket.Add("clientId",this.clientId);
-                
-            if(data!=null)
+
+            if (this.clientId != null)
+                dataPacket.Add("clientId", this.clientId);
+
+            if (data != null)
             {
-                foreach(KeyValuePair<String,Object> entry in data)
+                foreach (KeyValuePair<String, Object> entry in data)
                 {
-                    dataPacket.Add(entry.Key,entry.Value);
+                    dataPacket.Add(entry.Key, entry.Value);
                 }
             }
 
             String url = this.url + path;
 
-            if(apiKey!=null) 
+            if (apiKey != null)
             {
                 url += "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey=" + HttpUtility.UrlEncode(apiKey);
             }
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            
+            request.AutomaticDecompression = DecompressionMethods.GZip;
             request.Method = "POST";
             request.ContentType = "application/json;charset=UTF-8";
-
+            request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip");
             String dataJson = JsonConvert.SerializeObject(new List<Object>() { dataPacket });
 
             request.ContentLength = dataJson.Length;
@@ -169,7 +169,7 @@ namespace MinimalCometLibrary
 
             using (Stream dataStream = request.GetRequestStream())
             {
-                dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(dataJson),0,dataJson.Length);
+                dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 
                 using (StreamReader responseStream = new StreamReader(response.GetResponseStream()))
@@ -186,8 +186,8 @@ namespace MinimalCometLibrary
 
                         if (!responseDict["channel"].Equals(messagingChannel)) continue;
 
-                        if(responseDict.ContainsKey("data"))
-                            ProcessMessage(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<String,Object>>());
+                        if (responseDict.ContainsKey("data"))
+                            ProcessMessage(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<String, Object>>());
                     }
 
                     return responseList;
@@ -197,12 +197,12 @@ namespace MinimalCometLibrary
 
         public void Handshake()
         {
-            Dictionary<String,Object> handshakeData = new Dictionary<String,Object>();
-            handshakeData.Add("version","1.0");
-            handshakeData.Add("minimumVersion","0.9");
-            handshakeData.Add("supportedConnectionTypes",new List<String> { "long-polling" });
-            handshakeData.Add("advice", new Dictionary<String,int>() {{ "timeout", 60000 },{"interval",0}});
-            List<Dictionary<String,Object>> responseList = Request("/meta/handshake", handshakeData,"handshake");
+            Dictionary<String, Object> handshakeData = new Dictionary<String, Object>();
+            handshakeData.Add("version", "1.0");
+            handshakeData.Add("minimumVersion", "0.9");
+            handshakeData.Add("supportedConnectionTypes", new List<String> { "long-polling" });
+            handshakeData.Add("advice", new Dictionary<String, int>() { { "timeout", 60000 }, { "interval", 0 } });
+            List<Dictionary<String, Object>> responseList = Request("/meta/handshake", handshakeData, "handshake");
             clientId = (String)responseList[0]["clientId"];
         }
 
@@ -210,8 +210,8 @@ namespace MinimalCometLibrary
         {
             Handshake();
 
-            Dictionary<String,Object> subscribeData = new Dictionary<string,object>();
-            subscribeData.Add("subscription",messagingChannel);
+            Dictionary<String, Object> subscribeData = new Dictionary<string, object>();
+            subscribeData.Add("subscription", messagingChannel);
             Request("/meta/subscribe", subscribeData);
 
             new Thread(new ThreadStart(Poll)).Start();
@@ -225,7 +225,7 @@ namespace MinimalCometLibrary
             }
         }
 
-        private void ProcessMessage(Dictionary<String,Object> data)
+        private void ProcessMessage(Dictionary<String, Object> data)
         {
             Guid requestId = Guid.Parse((String)data["requestId"]);
             Query query = queries[requestId];
@@ -237,7 +237,7 @@ namespace MinimalCometLibrary
             }
         }
 
-        public void DoQuery(Dictionary<String,Object> query,  QueryHandler queryHandler) 
+        public void DoQuery(Dictionary<String, Object> query, QueryHandler queryHandler)
         {
             Guid requestId = Guid.NewGuid();
             queries.Add(requestId, new Query(query, queryHandler));
@@ -245,6 +245,6 @@ namespace MinimalCometLibrary
             Request("/service/query", new Dictionary<String, Object>() { { "data", query } });
         }
 
-        
+
     }
 }
