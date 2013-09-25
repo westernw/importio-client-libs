@@ -141,7 +141,8 @@ class ImportIO:
         
 
     def disconnect(self):
-        self.request("/meta/disconnect", throw=False)
+        self.request("/meta/disconnect", throw=True)
+        self.isConnected = False
 
     def pollQueue(self):
         while self.isConnected:
