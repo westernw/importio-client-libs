@@ -9,12 +9,17 @@
 #import "Importio.h"
 #import "Queue.h"
 
-@implementation Importio 
+@implementation Importio
 
 // message ID
 int msgId;
 
+bool _connected;
+
 NSString* clientId;
+
+NSString* _userId;
+NSString* _apiKey;
 
 NSString* rootUrl = @"https://query.import.io";
 
@@ -27,6 +32,8 @@ NSMutableDictionary* queries;
     messageQueue = [[Queue alloc] init];
     queries = [[NSMutableDictionary alloc] init];
     
+    _connected = FALSE;
+    
     return self;
 }
 
@@ -37,6 +44,8 @@ NSMutableDictionary* queries;
     
     messageQueue = [[Queue alloc] init];
     queries = [[NSMutableDictionary alloc] init];
+    
+    _connected = FALSE;
     
     return self;
 }
@@ -72,7 +81,7 @@ NSMutableDictionary* queries;
 
 - (NSArray*) request: (NSString*) channel withPath: (NSString*) path withData: (NSMutableDictionary*) data withThrows: (BOOL) throw
 {
-
+    
     // Add in the column values
     data[@"channel"] = channel;
     data[@"connectionType"] = @"long-polling";
@@ -104,9 +113,9 @@ NSMutableDictionary* queries;
     NSData* postData;
     
     if (data != nil) {
-         postData = [NSJSONSerialization dataWithJSONObject:data
-                                                           options:kNilOptions
-                                                             error:nil];
+        postData = [NSJSONSerialization dataWithJSONObject:data
+                                                   options:kNilOptions
+                                                     error:nil];
     }
     
     NSString* postLength;
@@ -133,8 +142,8 @@ NSMutableDictionary* queries;
     }
     
     NSArray* jsonMessages = [NSJSONSerialization JSONObjectWithData:returnData
-                                                        options:kNilOptions
-                                                             error:nil];
+                                                            options:kNilOptions
+                                                              error:nil];
     
     for(NSDictionary* message in jsonMessages)
     {
@@ -151,7 +160,7 @@ NSMutableDictionary* queries;
         if ([message objectForKey:@"data"]) {
             [messageQueue enqueue:message[@"data"]];
         }
-
+        
     }
     return jsonMessages;
 }
@@ -172,6 +181,8 @@ NSMutableDictionary* queries;
     NSMutableDictionary* subscriptionData = [@{@"subscription":messagingChannel} mutableCopy];
     [self request:@"/meta/subscribe" withPath:@"" withData:subscriptionData withThrows:FALSE];
     
+    _connected = TRUE;
+    
     NSThread* pollThread = [[NSThread alloc] initWithTarget:self selector:@selector(poll) object:nil];
     [pollThread start];
     
@@ -180,16 +191,22 @@ NSMutableDictionary* queries;
     
 }
 
+- (void) disconnect
+{
+    [self request:@"/meta/disconnect" withPath:@"" withData:[[NSMutableDictionary alloc] init] withThrows:TRUE];
+    _connected = FALSE;
+}
+
 - (void) pollQueue
 {
-    while (TRUE) {
+    while (_connected) {
         [self processMessage:[messageQueue get]];
     }
 }
 
 - (void) poll
 {
-    while (TRUE) {
+    while (_connected) {
         [self request:@"/meta/connect" withPath:@"connect" withData:[[NSMutableDictionary alloc] init] withThrows:FALSE];
     }
 }
@@ -201,7 +218,7 @@ NSMutableDictionary* queries;
         Query* query = queries[reqId];
         
         [query onMessage:data];
-    
+        
         if ([query finished])
         {
             [queries removeObjectForKey:reqId];

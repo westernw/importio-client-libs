@@ -28,10 +28,7 @@
 
 @end
 
-@interface Importio : NSObject 
-
-@property NSString* userId;
-@property NSString* apiKey;
+@interface Importio : NSObject
 
 
 - (id) initWithUserIdAndApikey: (NSString*) userId withApikey: (NSString*) apiKey;
@@ -41,6 +38,8 @@
 - (void) query: (NSDictionary*) query withCallback:(void (^)(Query*,NSDictionary*)) callback;
 
 - (void) connect;
+
+- (void) disconnect;
 
 @end
 
