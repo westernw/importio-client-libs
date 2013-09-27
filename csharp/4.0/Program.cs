@@ -16,7 +16,7 @@ namespace MinimalCometLibrary
         static void Main(string[] args)
         {
             // If using an API key
-            //ImportIO io = new ImportIO("http://api.qa2.import.io:8888","d08d14f3-6c98-44af-a301-f8d4288ecce3","tMFNJzaaLe8sgYF9hFNhKI7akyiPLMhfu8U2omNVCVr5hqWWLyiQMApDDyUucQKF++BAoVi6jnGnavYqRKP/9g==");
+            //ImportIO io = new ImportIO("http://api.import.io",Guid.parse("d08d14f3-6c98-44af-a301-f8d4288ecce3"),"tMFNJzaaLe8sgYF9hFNhKI7akyiPLMhfu8U2omNVCVr5hqWWLyiQMApDDyUucQKF++BAoVi6jnGnavYqRKP/9g==");
             
             // If using a username and password
             ImportIO io = new ImportIO();
