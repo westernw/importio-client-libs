@@ -49,3 +49,5 @@ client.query({"input":{"query":"ibm"},"connectorGuids":["39df3fe4-c716-478b-9b80
 
 # wait until all 3 queryies are finished
 latch.await()
+
+client.disconnect()
