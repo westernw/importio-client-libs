@@ -11,6 +11,7 @@ import threading, logging, uuid, json, urllib, urllib2, cookielib, gzip, Queue
 from cookielib import CookieJar, DefaultCookiePolicy
 from _pyio import BytesIO
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
 
 class Query:
