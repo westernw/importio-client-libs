@@ -173,11 +173,12 @@ class ImportIO
   def connect
     if @connected
       return
+    end
     handshake
     
     request("/meta/subscribe", "", {"subscription"=>@messagingChannel})
 
-   @connected = true
+    @connected = true
 
     @threads = []
     @threads << Thread.new(self) { |io|
