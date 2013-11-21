@@ -64,6 +64,7 @@ public class ImportIO {
 	String clientId;
 	String apiKey;
 	UUID userId;
+	boolean isConnected;
 	
 	public ImportIO() {
 		this(null,null);
@@ -267,7 +268,7 @@ public class ImportIO {
 		request("/service/query", "", new RequestMessage().setData(query), true);
 	}
 
-	public void shutdown() {
+	public void shutdown() throws IOException {
 		request("/meta/disconnect", "", null, true);
 		executorService.shutdown();
 		isConnected = false;
