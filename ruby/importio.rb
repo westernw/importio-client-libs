@@ -67,6 +67,7 @@ class ImportIO
     @apiKey = apiKey
     @cj = HTTP::CookieJar.new
     @queue = Queue.new
+    @isConnected = false
   end
   
   def proxy(host,port)
@@ -170,9 +171,13 @@ class ImportIO
   end
   
   def connect
+    if isConnected
+      return
     handshake
     
     request("/meta/subscribe", "", {"subscription"=>@messagingChannel})
+
+    isConnected = true
 
     @threads = []
     @threads << Thread.new(self) { |io|
@@ -190,7 +195,7 @@ class ImportIO
   end
   
   def join
-    while true
+    while isConnected
       if @queries.length == 0
         stop
         return
@@ -200,7 +205,7 @@ class ImportIO
   end
 
   def pollQueue
-    while true
+    while isConnected
       begin
         processMessage @queue.pop
       rescue => exception
@@ -210,7 +215,7 @@ class ImportIO
   end
 
   def poll
-    while true
+    while isConnected
       request("/meta/connect", "connect", {}, false)
     end
   end
