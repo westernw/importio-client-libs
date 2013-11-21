@@ -126,6 +126,9 @@ class ImportIO:
         self.clientId = handshake.json[0]["clientId"]
     
     def connect(self):
+        if self.isConnected:
+            return;
+
         self.handshake()
         
         self.request("/meta/subscribe", data={"subscription":self.messagingChannel})
