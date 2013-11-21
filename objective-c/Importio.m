@@ -176,7 +176,7 @@ NSMutableDictionary* queries;
 
 - (void) connect
 {
-    if(_isConnected) {
+    if(_connected) {
         return;
     }
     [self handshake];
