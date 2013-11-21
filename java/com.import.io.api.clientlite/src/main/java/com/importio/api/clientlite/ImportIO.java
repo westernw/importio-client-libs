@@ -52,6 +52,8 @@ public class ImportIO {
 	@Setter JsonImplementation jsonImplementation;
 	final ThreadLocal<CookieManager> cookieManagers = new ThreadLocal<CookieManager>();
 	final ConcurrentHashMap<String, ImportIOExecutingQuery> queries = new ConcurrentHashMap<String, ImportIOExecutingQuery>();
+
+	private Thread pollThread;
 	
 	@Setter ExecutorService executorService = Executors.newSingleThreadExecutor();
 	
@@ -62,6 +64,7 @@ public class ImportIO {
 	String clientId;
 	String apiKey;
 	UUID userId;
+	boolean isConnected;
 	
 	public ImportIO() {
 		this(null,null);
@@ -222,6 +225,11 @@ public class ImportIO {
 
 	public void connect() throws IOException {
 		
+		if(isConnected) {
+			return;
+		}
+
+		isConnected = true;
 		// default to jackson
 		if ( jsonImplementation == null ) {
 			jsonImplementation = new JacksonJsonImplementation();
@@ -229,17 +237,18 @@ public class ImportIO {
 		
 		handshake();
 		request("/meta/subscribe", "subscribe", new RequestMessage().setSubscription(MESSAGING_CHANNEL), true);
-		val thread = new Thread(new Runnable() {
+		pollThread = new Thread(new Runnable() {
 			public void run() {
 				poll();
 			}
 		});
-		thread.setDaemon(true);
-		thread.start();
+		pollThread.setDaemon(true);
+		pollThread.start();
+
 	}
 
 	private void poll() {
-		while (true) {
+		while (isConnected) {
 			try {
 				request("/meta/connect", "connect", null, false);
 			} catch (IOException e) {
@@ -259,8 +268,10 @@ public class ImportIO {
 		request("/service/query", "", new RequestMessage().setData(query), true);
 	}
 
-	public void shutdown() {
+	public void shutdown() throws IOException {
+		request("/meta/disconnect", "", null, true);
 		executorService.shutdown();
+		isConnected = false;
 	}
 	
 }
