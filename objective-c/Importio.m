@@ -176,6 +176,9 @@ NSMutableDictionary* queries;
 
 - (void) connect
 {
+    if(_isConnected) {
+        return;
+    }
     [self handshake];
     
     NSMutableDictionary* subscriptionData = [@{@"subscription":messagingChannel} mutableCopy];
