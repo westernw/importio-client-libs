@@ -225,6 +225,10 @@ namespace MinimalCometLibrary
 
         public void Connect()
         {
+            if(isConnected) {
+                return ;
+            }
+            
             Handshake();
 
             Dictionary<String, Object> subscribeData = new Dictionary<string, object>();
