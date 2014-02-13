@@ -11,6 +11,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -163,8 +164,11 @@ public class ImportIO {
 			urlConnection.setRequestProperty("User-Agent", USER_AGENT);
 			urlConnection.setRequestProperty("Accept-Encoding", "gzip");
 
+			List<RequestMessage> requestArray = new ArrayList<RequestMessage>();
+			requestArray.add(data);
+			
 			urlConnection.setDoOutput(true); 
-			jsonImplementation.writeRequest(urlConnection.getOutputStream(), data);
+			jsonImplementation.writeRequest(urlConnection.getOutputStream(), requestArray);
 			
 			if ( urlConnection.getResponseCode() != 200 ) {
 				throw new IOException("Connect failed, status " + urlConnection.getResponseCode() );

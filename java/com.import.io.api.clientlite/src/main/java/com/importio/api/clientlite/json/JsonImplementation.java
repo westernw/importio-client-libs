@@ -10,7 +10,7 @@ import com.importio.api.clientlite.data.ResponseMessage;
 
 public interface JsonImplementation {
 
-	void writeRequest(OutputStream outputStream, RequestMessage data) throws IOException;
+	void writeRequest(OutputStream outputStream, List<RequestMessage> data) throws IOException;
 
 	List<ResponseMessage> readResponse(InputStream inputStream) throws IOException;
 

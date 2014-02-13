@@ -16,7 +16,7 @@ import com.importio.api.clientlite.data.ResponseMessage;
 public class JacksonJsonImplementation implements JsonImplementation {
 	final ObjectMapper objectMapper = new ObjectMapper(){{setSerializationInclusion(Inclusion.NON_NULL);}}.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-	public void writeRequest(OutputStream outputStream, RequestMessage data) throws IOException {
+	public void writeRequest(OutputStream outputStream, List<RequestMessage> data) throws IOException {
 		objectMapper.writeValue(outputStream, data);
 	}
 
