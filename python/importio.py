@@ -1,5 +1,7 @@
 '''
-import.io client library
+import.io client library - client classes
+
+This file contains the main classes required to connect to and query import.io APIs
 
 Dependencies: Python 2.7
 
@@ -152,7 +154,7 @@ class importio:
         for msg in response.json:
             # If the message is not successful, i.e. an import.io server error has occurred, decide what action to take
             if "successful" in msg and msg["successful"] is not True :
-                msg = "Unsuccessful request: %s", msg
+                msg = "Unsuccessful request: %s" % msg
                 if throw:
                     raise Exception(msg)
                 else:
