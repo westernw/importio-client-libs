@@ -193,6 +193,6 @@ for index, value in enumerate(test7data):
 
 if not test7pass:
 	print "Test 7: Failed (returned data did not match)"
-	sys.exit(6)
+	sys.exit(7)
 else:
 	print "Test 7: Success"
