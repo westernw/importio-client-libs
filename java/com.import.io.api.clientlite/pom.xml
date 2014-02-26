@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.importio</groupId>
 	<artifactId>com.importio.api.clientlite</artifactId>
-	<version>1.0.3-SNAPSHOT</version>
+	<version>1.0.4-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<name>import.io lite client library</name>
 	<description>A client library for import.io that only depends on the JDK. Not suitable for very high concurrency.</description>
