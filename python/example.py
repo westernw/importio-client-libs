@@ -59,7 +59,8 @@ dataRows = []
 # This method will receive each message that comes back from the queries, and we can take that
 # data and store it for use in our app
 def callback(query, message):
-
+    global dataRows
+    
     # Check the message we receive actually has some data in it
     if message["type"] == "MESSAGE":
         if "errorType" in message["data"]:

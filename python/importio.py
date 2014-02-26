@@ -92,6 +92,7 @@ class importio:
         self.opener = urllib2.build_opener(urllib2.ProxyHandler(self.proxies), urllib2.HTTPCookieProcessor(self.cj))
         self.queue = Queue.Queue()
         self.isConnected = False
+        self.disconnecting = False
         # These variables serve to identify this client and its version to the server
         self.clientName = "import.io Python client"
         self.clientVersion = "2.0.0"
@@ -137,7 +138,10 @@ class importio:
         request.add_header('import-io-client-version', self.clientVersion)
 
         # Send the request itself
-        response = self.opener.open(request)
+        try:
+            response = self.opener.open(request)
+        except urllib2.HTTPError:
+            raise Exception("Exception raised connecting to import.io for url %s" % url)
 
         # If the server responds non-200 we have a serious issue (configuration wrong or server down)
         if response.code != 200 :
@@ -153,12 +157,15 @@ class importio:
         # Iterate through each of the messages in the response content
         for msg in response.json:
             # If the message is not successful, i.e. an import.io server error has occurred, decide what action to take
-            if "successful" in msg and msg["successful"] is not True :
-                msg = "Unsuccessful request: %s" % msg
-                if throw:
-                    raise Exception(msg)
+            if "successful" in msg and msg["successful"] is not True:
+                errorMessage = "Unsuccessful request: %s" % msg
+                if not self.disconnecting and self.isConnected:
+                    if throw:
+                        raise Exception(errorMessage)
+                    else:
+                        logger.warn(errorMessage)
                 else:
-                    logger.warn(msg)
+                    continue
         
             # Ignore messages that come back on a CometD channel that we have not subscribed to
             if msg["channel"] != self.messagingChannel : continue
@@ -229,10 +236,16 @@ class importio:
         It is best practice to disconnect when you are finished with querying, so as to clean
         up resources on both the client and server
         '''
+        # Set the flag to notify handlers that we are disconnecting, i.e. open connect calls will fail
+        self.disconnecting = True
+        # Set the connection status flag in the library to prevent any other requests going out
+        self.isConnected = False
         # Make the disconnect request to the server
         self.request("/meta/disconnect", throw=True)
-        # Set the connection status flag in the library so that we can reconnect later if desired
-        self.isConnected = False
+        # Now we are disconnected we need to remove the client ID
+        self.clientId = None
+        # We are done disconnecting so reset the flag
+        self.disconnecting = False
 
     def pollQueue(self):
         '''
