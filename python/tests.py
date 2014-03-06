@@ -12,10 +12,11 @@ Dependencies: Python 2.7
 import importio, latch, sys, uuid
 
 # Retrieve the credentials from the command line
-username = sys.argv[1]
-password = sys.argv[2]
-userguid = sys.argv[3]
-apikey = sys.argv[4]
+host = "https://query." + sys.argv[1]
+username = sys.argv[2]
+password = sys.argv[3]
+userguid = sys.argv[4]
+apikey = sys.argv[5]
 
 '''
 Test 1
@@ -23,7 +24,7 @@ Test 1
 Test that specifying incorrect username and password raises an exception
 '''
 try:
-	client = importio.importio()
+	client = importio.importio(host=host)
 	client.login(str(uuid.uuid4()), str(uuid.uuid4()))
 	print "Test 1: Failed (did not throw exception)"
 	sys.exit(1)
@@ -36,7 +37,7 @@ Test 2
 Test that providing an incorrect user GUID raises an exception
 '''
 try:
-	client = importio.importio(userId=str(uuid.uuid4()), apiKey=apikey)
+	client = importio.importio(host=host, userId=str(uuid.uuid4()), apiKey=apikey)
 	client.connect()
 	print "Test 2: Failed (did not throw exception)"
 	sys.exit(2)
@@ -49,7 +50,7 @@ Test 3
 Test that providing an incorrect API key raises an exception
 '''
 try:
-	client = importio.importio(userId=userguid, apiKey=str(uuid.uuid4()))
+	client = importio.importio(host=host, userId=userguid, apiKey=str(uuid.uuid4()))
 	client.connect()
 	print "Test 3: Failed (did not throw exception)"
 	sys.exit(3)
@@ -72,7 +73,7 @@ def test4callback(query, message):
 
 	if query.finished(): test4latch.countdown()
 
-client = importio.importio(userId=userguid, apiKey=apikey)
+client = importio.importio(host=host, userId=userguid, apiKey=apikey)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ str(uuid.uuid4()) ] }, test4callback)
 
@@ -101,7 +102,7 @@ def test5callback(query, message):
 
 	if query.finished(): test5latch.countdown()
 
-client = importio.importio(userId=userguid, apiKey=apikey)
+client = importio.importio(host=host, userId=userguid, apiKey=apikey)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "eeba9430-bdf2-46c8-9dab-e1ca3c322339" ] }, test5callback)
 
@@ -142,7 +143,7 @@ def test6callback(query, message):
 
 	if query.finished(): test6latch.countdown()
 
-client = importio.importio(userId=userguid, apiKey=apikey)
+client = importio.importio(host=host, userId=userguid, apiKey=apikey)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test6callback)
 
@@ -178,7 +179,7 @@ def test7callback(query, message):
 
 	if query.finished(): test7latch.countdown()
 
-client = importio.importio()
+client = importio.importio(host=host)
 client.login(username, password)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test7callback)
