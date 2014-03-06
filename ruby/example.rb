@@ -46,16 +46,16 @@ data_rows = []
 # data and store it for use in our app
 callback = lambda do |query, message|
   if message["type"] == "MESSAGE"
-  	if message["data"].key?("errorType")
-  		# In this case, we received a message, but it was an error from the external service
-  		puts "Got an error!"
-  		puts JSON.pretty_generate(message["data"])
+    if message["data"].key?("errorType")
+      # In this case, we received a message, but it was an error from the external service
+      puts "Got an error!"
+      puts JSON.pretty_generate(message["data"])
   	else
-  		# We got a message and it was not an error, so we can process the data
-        puts "Got data!"
-    	puts JSON.pretty_generate(message["data"])
-    	# Save the data we got in our dataRows variable for later
-    	data_rows << message["data"]["results"]
+      # We got a message and it was not an error, so we can process the data
+      puts "Got data!"
+      puts JSON.pretty_generate(message["data"])
+      # Save the data we got in our dataRows variable for later
+      data_rows << message["data"]["results"]
     end
   end
 end

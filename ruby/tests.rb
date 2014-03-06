@@ -23,36 +23,36 @@ apikey = ARGV[4]
 #
 # Test that specifying incorrect username and password raises an exception
 begin
-	client = Importio::new(nil, nil, "https://query." + host)
-	client.login(SecureRandom.uuid, SecureRandom.uuid, "https://api." + host)
-	puts "Test 1: Failed (did not throw exception)"
-	exit 1
+  client = Importio::new(nil, nil, "https://query." + host)
+  client.login(SecureRandom.uuid, SecureRandom.uuid, "https://api." + host)
+  puts "Test 1: Failed (did not throw exception)"
+  exit 1
 rescue
-	puts "Test 1: Success"
+  puts "Test 1: Success"
 end
 
 # Test 2
 #
 # Test that providing an incorrect user GUID raises an exception
 begin
-	client = Importio::new(SecureRandom.uuid, apikey, "https://query." + host)
-	client.connect
-	puts "Test 2: Failed (did not throw exception)"
-	exit 2
+  client = Importio::new(SecureRandom.uuid, apikey, "https://query." + host)
+  client.connect
+  puts "Test 2: Failed (did not throw exception)"
+  exit 2
 rescue
-	puts "Test 2: Success"
+  puts "Test 2: Success"
 end
 
 # Test 3
 #
 # Test that providing an incorrect API key raises an exception
 begin
-	client = Importio::new(userguid, SecureRandom.uuid, "https://query." + host)
-	client.connect
-	puts "Test 3: Failed (did not throw exception)"
-	exit 3
+  client = Importio::new(userguid, SecureRandom.uuid, "https://query." + host)
+  client.connect
+  puts "Test 3: Failed (did not throw exception)"
+  exit 3
 rescue
-	puts "Test 3: Success"
+  puts "Test 3: Success"
 end
 
 # Test 4
@@ -62,7 +62,7 @@ test4pass = false
 
 test4callback = lambda do |query, message|
   if message["type"] == "MESSAGE" and message["data"].key?("errorType") and message["data"]["errorType"] == "ConnectorNotFoundException"
-  	test4pass = true
+    test4pass = true
   end
 end
 
@@ -73,10 +73,10 @@ client.join
 client.disconnect
 
 if !test4pass
-	puts "Test 4: Failed (did not return an error message)"
-	exit 4
+  puts "Test 4: Failed (did not return an error message)"
+  exit 4
 else
-	puts "Test 4: Success"
+  puts "Test 4: Success"
 end
 
 # Test 5
@@ -86,7 +86,7 @@ test5pass = false
 
 test5callback = lambda do |query, message|
   if message["type"] == "MESSAGE" and message["data"].key?("errorType") and message["data"]["errorType"] == "UnauthorizedException"
-  	test5pass = true
+    test5pass = true
   end
 end
 
@@ -97,10 +97,10 @@ client.join
 client.disconnect
 
 if !test5pass
-	puts "Test 5: Failed (did not return an error message)"
-	exit 5
+  puts "Test 5: Failed (did not return an error message)"
+  exit 5
 else
-	puts "Test 5: Success"
+  puts "Test 5: Success"
 end
 
 # Set up the expected data for the next two tests
@@ -121,9 +121,9 @@ test6pass = true
 
 test6callback = lambda do |query, message|
   if message["type"] == "MESSAGE"
-  	for result in message["data"]["results"]
-  	  test6data << result["name"]
-  	end
+    for result in message["data"]["results"]
+      test6data << result["name"]
+    end
   end
 end
 
@@ -135,16 +135,16 @@ client.disconnect
 
 test6data.each_with_index { |value, index|
   if value != expected_data[index]
-  	test6pass = false
-  	puts "Test 6: Index #{index} does not match, expected #{value}"
+    test6pass = false
+    puts "Test 6: Index #{index} does not match, expected #{value}"
   end
 }
 
 if !test6pass
-	puts "Test 6: Failed (returned data did not match)"
-	exit 6
+  puts "Test 6: Failed (returned data did not match)"
+  exit 6
 else
-	puts "Test 6: Success"
+  puts "Test 6: Success"
 end
 
 # Test 7
@@ -155,9 +155,9 @@ test7pass = true
 
 test7callback = lambda do |query, message|
   if message["type"] == "MESSAGE"
-  	for result in message["data"]["results"]
-  	  test7data << result["name"]
-  	end
+    for result in message["data"]["results"]
+      test7data << result["name"]
+    end
   end
 end
 
@@ -170,14 +170,14 @@ client.disconnect
 
 test7data.each_with_index { |value, index|
   if value != expected_data[index]
-  	test7pass = false
-  	puts "Test 7: Index #{index} does not match, expected #{value}"
+    test7pass = false
+    puts "Test 7: Index #{index} does not match, expected #{value}"
   end
 }
 
 if !test7pass
-	puts "Test 7: Failed (returned data did not match)"
-	exit 7
+  puts "Test 7: Failed (returned data did not match)"
+  exit 7
 else
-	puts "Test 7: Success"
+  puts "Test 7: Success"
 end
