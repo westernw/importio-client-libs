@@ -1,7 +1,7 @@
 '''
 import.io client library - test cases
 
-This file contains tests that verify the functionality of the import.io python client
+This file contains tests that verify the functionality of the import.io Python client
 
 Dependencies: Python 2.7
 
@@ -128,7 +128,7 @@ expectedData = [
 '''
 Test 6
 
-Tests querying a working source with username and password
+Tests querying a working source with user GUID and API key
 '''
 test6latch = latch.latch(1)
 test6data = []
