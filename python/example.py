@@ -15,7 +15,7 @@ import logging, json, importio, latch
 # what the import.io client is doing and will surface more information on errors
 logging.basicConfig(level=logging.INFO)
 
-# If you wish, you may configure HTTP proxies that python can use to connect
+# If you wish, you may configure HTTP proxies that Python can use to connect
 # to import.io. If you need to do this, uncomment the following line and fill in the
 # correct details to specify an HTTP proxy:
 

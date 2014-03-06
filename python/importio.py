@@ -190,7 +190,7 @@ class importio:
                 "interval": 0
             }
         })
-        # Set the Client ID from the handshake's resposne
+        # Set the Client ID from the handshake's response
         self.clientId = handshake.json[0]["clientId"]
 
     def subscribe(self, channel):
