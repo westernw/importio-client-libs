@@ -9,8 +9,8 @@
 # @source: https://github.com/import-io/importio-client-libs/tree/master/python
 # 
 
-require './importio.rb'
-require 'json' 
+require "./importio.rb"
+require "json" 
 
 # You have two choices for authenticating with the Ruby client: you can use your API key
 # or your username and password. Username and password is quicker to get started with, but
@@ -35,7 +35,7 @@ client = Importio::new("YOUR_USER_GUID", "YOUR_API_KEY")
 #client.login("YOUR_USERNAME", "YOUR_PASSWORD")
 
 # Once we have started the client and authenticated, we need to connect it to the server:
-client.connect()
+client.connect
 
 # Define here a global variable that we can put all our results in to when they come back from
 # the server, so we can use the data later on in the script
