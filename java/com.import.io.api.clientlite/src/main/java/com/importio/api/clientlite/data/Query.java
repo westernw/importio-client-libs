@@ -11,51 +11,71 @@ import lombok.experimental.Accessors;
 import lombok.experimental.FieldDefaults;
 
 /**
- * Contains all the parameters of a query, for example the mixGuid, mixKey and query input.
- * @author dev
- *
+ * Encapsulates all of the details to issue a query to the import.io platform
+ * 
+ * @author dev@import.io
+ * @see https://github.com/import-io/importio-client-libs/tree/master/java
  */
 @Data
 @Accessors(chain=true)
 @FieldDefaults(level=AccessLevel.PRIVATE)
 public class Query {
 	
+	/**
+	 * Enumerates the valid formats to expect data back from the API in
+	 */
 	public static enum Format { JSON, HTML, XML }
 	
 	/**
-	 * object guid
+	 * This is an ID for the query, which does not need to be set to issue it
 	 */
 	UUID guid;
 	
 	/**
-	 * The identifier of the query
+	 * We have a request ID here to allow us to link result messages back to the
+	 * original query object
 	 */
 	String requestId;
 	
 	/**
-	 * The guid of the mix that the query is aimed at
+	 * List of GUIDs of the connectors that we want to federate this query to
 	 */
 	List<UUID> connectorGuids;
 	
 	/**
-	 * the query input map. N.B this can have multiple fields therefore is a map
+	 * The input parameters and what their values are for this query. Each input name is a
+	 * key in this map, and the value is what will be passed on to the source being queried 
 	 */
 	Map<String, Object> input;
 	
+	/**
+	 * Optionally specify the maximum number of pages to return per connector GUID in this
+	 * query. The server will impose a maximum and a default value for this parameter.
+	 */
 	Integer maxPages;
 	
+	/**
+	 * Which page of results to start at. Not all sources support starting at a page
+	 * other than the first one.
+	 */
 	Integer startPage;
 	
 	/**
-	 * Whether or not to unpack values into hierarchical objects
+	 * By setting this to true, return the result data as hierarchical objects rather than
+	 * a flat key-value map.
 	 */
 	boolean asObjects;
 	
 	/**
-	 * currently unused
+	 * Currently the APIs ignore the value of this parameter
 	 */
+	@Deprecated
 	boolean returningSource;
 	
+	/**
+	 * Which data format to use. We use JSON as we have the {@see JsonImplementation} to convert the data for us
+	 * @see Query.Format
+	 */
 	Format format = Format.JSON;
 
 }

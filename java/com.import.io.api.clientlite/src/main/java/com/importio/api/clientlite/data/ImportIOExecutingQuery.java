@@ -15,60 +15,70 @@ import com.importio.api.clientlite.MessageCallback;
 import com.importio.api.clientlite.data.QueryMessage.MessageType;
 
 /**
- * CometdQueryHandler tracks the progress of a specific Query API query. And routes messages from the cometd client.
- * @author dev
- *
+ * This class is responsible for tracking an in-progress query and reporting on its progress
+ * 
+ * @author dev@import.io
+ * @see https://github.com/import-io/importio-client-libs/tree/master/java
  */
 @Log
 @FieldDefaults(level=AccessLevel.PRIVATE)
 public class ImportIOExecutingQuery {
 
 	/**
-	 * number of jobs that have started on the server side
+	 * The number of jobs the server has started in the process of executing this query
 	 */
 	int jobsStarted;
 	
 	/**
-	 * the number of jobs that have completed on the server side
+	 * The number of jobs that the server has completed on this query
 	 */
 	int jobsCompleted;
 	
 	/**
-	 * the number of jobs spawned on the server
+	 * The number of jobs the servers thus far have spawned when processing this query
 	 */
 	int jobsSpawned;
 	
 	/**
-	 * number of messages
+	 * Track the number of messages we receive for this query. Atomic so as to ensure
+	 * consistency when receiving messages asynchronously from the underlying connection
 	 */
 	AtomicInteger messages = new AtomicInteger();
 	
 	/**
-	 * the queryId used to cancel queries @see {@link CancelRequest}
+	 * The identifier for this query that the client and server use to associate messages
+	 * with the specific query
 	 */
 	public UUID queryId;
 	
 	/**
-	 * Returns true if the statement is finished.
+	 * This flag is set to true once the server has sent enough STOP messages to indicate
+	 * that all of the INITed and SPAWNed jobs for this query have been completed
 	 */
 	@Getter
 	boolean finished = false;
 	
 	/**
-	 * defines the callback where messages associated with this query are routed @see {@link ImportIOConnection#executeQuery(Query, MessageCallback)}
+	 * A callback to be used whenever a new message is received and processed relating to this query
 	 */
 	MessageCallback messageCallback;
 	
 	/**
-	 * the query that this handler wraps
+	 * The query object that was used to begin the query process on the server
 	 */
 	@Getter Query query;
 
+	/**
+	 * The executor we will use to execute asynchronous operations
+	 */
 	ExecutorService executorService;
 	
 	/**
-	 * creates a query handler to manage the messaging and progress tracking of a query
-	 * @param query 
+	 * Construct a new instance of the ExecutingQuery to track the progress of the specific query on the
+	 * import.io platform
+	 * 
+	 * @param executorService
+	 * @param query
 	 * @param messageCallback
 	 */
 	public ImportIOExecutingQuery(ExecutorService executorService, Query query, MessageCallback messageCallback) {
@@ -77,11 +87,10 @@ public class ImportIOExecutingQuery {
 		this.messageCallback = messageCallback;
 	}
 
-	
 	/**
-	 * routes the messages recived from the server to the callback defined in {@link ImportIOConnection#executeQuery(Query, MessageCallback)
-	 * allows {@link this#isFinished()} to return true if there has been an unrecoverable error
-	 * @param executorService 
+	 * When the CometD channel provides a message for this specific query, handle it by updating our current progress
+	 * and then pass it off to the callback for use by the user 
+	 * 
 	 * @param message
 	 */
 	public void onMessage(final QueryMessage message) {
@@ -100,42 +109,59 @@ public class ImportIOExecutingQuery {
 		
 	}
 
+	/**
+	 * Updates the progress of this specific query based on the arrival of a new message
+	 * 
+	 * @param message
+	 * @return
+	 */
 	@Synchronized
 	private Progress updateProgress(QueryMessage message) {
+		
+		// Analyse the type of the message to update our progress tracking metrics
 		switch (message.getType()) {
-		case SPAWN:
-			jobsSpawned++;
-			break;
-		case INIT:
-		case START:
-			jobsStarted++;
-			break;
-
-		case STOP:
-			jobsCompleted++;
-			break;
-		case MESSAGE:
-			messages.incrementAndGet();
-			break;
-		case CANCEL:
-		case ERROR:
-		case UNAUTH:
-		default:
-			break;
+			case SPAWN:
+				// A new job has been spawned by the server
+				jobsSpawned++;
+				break;
+			case INIT:
+			case START:
+				// A new job has been initialised or started
+				jobsStarted++;
+				break;
+			case STOP:
+				// A job has been completed
+				jobsCompleted++;
+				break;
+			case MESSAGE:
+				// A message has been received, so just track how many we have
+				messages.incrementAndGet();
+				break;
+			case CANCEL:
+			case ERROR:
+			case UNAUTH:
+			default:
+				// There has been some kind of problem
+				break;
 		}
+		
+		// Update the finished state based on our tracked message metrics
 		finished = jobsStarted == jobsCompleted && jobsSpawned + 1 == jobsStarted && jobsStarted > 0;
 		
-		//if there is an error or the user is not authorised correctly then allow isFinished to return true by setting jobs to -1
+		// If there is an error or the user is not authorised correctly then mark this query as finished
 		if(message.getType() == MessageType.ERROR || message.getType() == MessageType.UNAUTH || message.getType() == MessageType.CANCEL) {
 			finished = true;
 		}
 		
+		// Return an object which indicates the current progress level
 		return getProgress();
 	}
 	
 
 	/**
-	 * returns a Progress object containing the progress information of the query
+	 * Returns a {@see Progress} object which indicates to what level of completion this query is
+	 * 
+	 * @return
 	 */
 	public Progress getProgress() {
 		return new Progress(finished, jobsSpawned, jobsStarted,jobsCompleted, messages.get());

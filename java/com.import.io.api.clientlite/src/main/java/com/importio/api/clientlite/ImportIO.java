@@ -37,25 +37,56 @@ import com.importio.api.clientlite.data.ResponseMessage;
 import com.importio.api.clientlite.json.JacksonJsonImplementation;
 import com.importio.api.clientlite.json.JsonImplementation;
 
-@FieldDefaults(level=AccessLevel.PRIVATE) 
+/**
+ * The main interface to the import.io client library, used to initialise the connection
+ * to the import.io platform and issue and receive data from queries
+ * 
+ * @author dev@import.io
+ * @see https://github.com/import-io/importio-client-libs/tree/master/java
+ */
 @Log
+@FieldDefaults(level=AccessLevel.PRIVATE) 
 public class ImportIO {
 
+	/**
+	 * Content types and other constants that we need to use to interact with the import.io API
+	 */
 	static final String FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
 	static final String JSON_CONTENT_TYPE = "application/json;charset=UTF-8";
-
 	static final String UTF_8 = "UTF-8";
 
+	/**
+	 * Configuration for the CometD client
+	 */
 	static final String MESSAGING_CHANNEL = "/messaging";
-	static final String USER_AGENT = "import-io-client-lite";
+	static final String CLIENT_NAME = "import.io Java (lite) client";
+	static final String CLIENT_VERSION = "2.0.0";
 	
+	/**
+	 * Cookie manager to manage our cookies between requests
+	 */
 	final CookieManager cookieManager = new CookieManager();
-	@Setter JsonImplementation jsonImplementation;
 	final ThreadLocal<CookieManager> cookieManagers = new ThreadLocal<CookieManager>();
+	
+	/**
+	 * The {@see JsonImplementation} that we are going to use
+	 */
+	@Setter JsonImplementation jsonImplementation;
+	
+	/**
+	 * A map which stores the currently running queries that have been issued but are yet to be completed
+	 */
 	final ConcurrentHashMap<String, ImportIOExecutingQuery> queries = new ConcurrentHashMap<String, ImportIOExecutingQuery>();
 
+	/**
+	 * Thread which allows us to connect to the import.io platform asynchronously
+	 */
 	private Thread pollThread;
 	
+	/**
+	 * Allows the user to override the executor service that we use to execute callback
+	 * functions on
+	 */
 	@Setter ExecutorService executorService = Executors.newSingleThreadExecutor();
 	
 	@Setter String apiHost = "https://api.import.io";
@@ -112,7 +143,6 @@ public class ImportIO {
 			urlConnection.setRequestMethod("POST");
 			
 			urlConnection.setRequestProperty("Content-Type", FORM_CONTENT_TYPE);
-			urlConnection.setRequestProperty("User-Agent", USER_AGENT);
 			urlConnection.setRequestProperty("Accept-Encoding", "gzip");
 			
 			val writer = new OutputStreamWriter(urlConnection.getOutputStream());
@@ -161,7 +191,6 @@ public class ImportIO {
 			urlConnection.setRequestMethod("POST");
 			
 			urlConnection.setRequestProperty("Content-Type", JSON_CONTENT_TYPE);
-			urlConnection.setRequestProperty("User-Agent", USER_AGENT);
 			urlConnection.setRequestProperty("Accept-Encoding", "gzip");
 
 			List<RequestMessage> requestArray = new ArrayList<RequestMessage>();
