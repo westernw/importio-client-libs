@@ -74,7 +74,6 @@ public class ImportIOExample {
 			 */
 			@SuppressWarnings("unchecked")
 			public void onMessage(Query query, QueryMessage message, Progress progress) {
-				// TODO maybe refactor this so we don't have to do so much casting?
 				if (message.getType() == MessageType.MESSAGE) {
 					HashMap<String, Object> resultMessage = (HashMap<String, Object>) message.getData();
 					if (resultMessage.containsKey("errorType")) {
