@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 import lombok.experimental.FieldDefaults;
 
 /**
- * A RequestMessage is a message that is used to send protocol-level (CometD) data to the import.io servers
+ * A RequestMessage is a message that is used to send protocol-level (CometD) data to the import.io platform
  * 
  * @author dev@import.io
  * @see https://github.com/import-io/importio-client-libs/tree/master/java

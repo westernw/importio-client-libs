@@ -22,37 +22,21 @@ public class QueryMessage {
 	 * The type of message being returned by the query system
 	 */
 	public static enum MessageType {
-		/**
-		 * A job has been initialised on behalf of the user
-		 */
+		// A job has been initialised on behalf of the user
 		INIT,
-		/**
-		 * A job is in progress and a message has been generated
-		 */
+		// A job is in progress and a message has been generated
 		MESSAGE,
-		/**
-		 * A job has finished
-		 */
+		// A job has finished
 		STOP,
-		/**
-		 * There has been an error returned by a job (e.g. external site errored)
-		 */
+		// There has been an error returned by a job (e.g. external site errored)
 		ERROR,
-		/**
-		 * A job's work has been started
-		 */
+		// A job's work has been started
 		START,
-		/**
-		 * The user is not authenticated
-		 */
+		// The user is not authenticated
 		UNAUTH,
-		/**
-		 * A new set of jobs has been spawned
-		 */
+		// A new set of jobs has been spawned
 		SPAWN, 
-		/**
-		 * A job has been cancelled
-		 */
+		// A job has been cancelled
 		CANCEL
 	}
 
@@ -67,7 +51,7 @@ public class QueryMessage {
 	Object data;
 	
 	/**
-	 * The Query ID that this message is associated with
+	 * The query ID that this message is associated with
 	 */
 	UUID queryId;
 	

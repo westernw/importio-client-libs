@@ -16,7 +16,7 @@ public interface MessageCallback {
 	 * Called every time a message is received from the server
 	 * relating to the current query
 	 * 
-	 * @see ImportIOExecutingQuery.onMessage
+	 * @see ExecutingQuery.onMessage
 	 * 
 	 * @param query
 	 * @param message

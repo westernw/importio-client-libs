@@ -22,7 +22,7 @@ import com.importio.api.clientlite.data.QueryMessage.MessageType;
  */
 @Log
 @FieldDefaults(level=AccessLevel.PRIVATE)
-public class ImportIOExecutingQuery {
+public class ExecutingQuery {
 
 	/**
 	 * The number of jobs the server has started in the process of executing this query
@@ -81,7 +81,7 @@ public class ImportIOExecutingQuery {
 	 * @param query
 	 * @param messageCallback
 	 */
-	public ImportIOExecutingQuery(ExecutorService executorService, Query query, MessageCallback messageCallback) {
+	public ExecutingQuery(ExecutorService executorService, Query query, MessageCallback messageCallback) {
 		this.executorService = executorService;
 		this.query = query;
 		this.messageCallback = messageCallback;
