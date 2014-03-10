@@ -73,6 +73,30 @@
 					<arguments>-Dgpg.passphrase=${gpg.passphrase}</arguments>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemProperties>
+						<property>
+							<name>userGuid</name>
+							<value>${userGuid}</value>
+						</property>
+						<property>
+							<name>apiKey</name>
+							<value>${apiKey}</value>
+						</property>
+						<property>
+							<name>username</name>
+							<value>${username}</value>
+						</property>
+						<property>
+							<name>password</name>
+							<value>${password}</value>
+						</property>
+					</systemProperties>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
