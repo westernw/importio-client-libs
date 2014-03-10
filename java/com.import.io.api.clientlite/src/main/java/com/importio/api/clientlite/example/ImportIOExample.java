@@ -131,9 +131,8 @@ public class ImportIOExample {
 	 * @param messageCallback
 	 * @param connectorGuids
 	 * @param queryValue
-	 * @throws IOException
 	 */
-	private static Query generateQueryObject(List<UUID> connectorGuids, String queryValue) throws IOException {
+	private static Query generateQueryObject(List<UUID> connectorGuids, String queryValue) {
 		// Generate a map of inputs we wish to send
 		Map<String, Object> queryInput = new HashMap<String,Object>();
 		queryInput.put("query", queryValue);
