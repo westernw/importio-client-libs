@@ -182,7 +182,11 @@ class Importio
       if msg.has_key?("successful") and msg["successful"] != true 
         msg = "Unsuccessful request: #{msg}"
         if !@disconnecting and @connected
-          if throw
+          # If we get a 402 unknown client we need to reconnect
+          if msg["error"] == "402::Unknown client"
+            disconnect()
+            connect()
+          elsif throw
             raise msg
           else
             print msg
