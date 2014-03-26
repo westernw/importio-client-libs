@@ -58,6 +58,9 @@ callback = lambda do |query, message|
       data_rows << message["data"]["results"]
     end
   end
+  if query.finished
+    puts "Query finished"
+  end
 end
 
 # Issue three queries to the same data source with different inputs
