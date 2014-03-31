@@ -91,6 +91,10 @@ class Importio
     @clientVersion = "2.0.0"
   end
 
+  # We use this only for a specific test case
+  attr_reader :client_id
+  attr_writer :client_id
+
   def proxy(host,port)
     # If you want to configure HTTP proxies, use this method to do so
     @proxy_host = host
@@ -184,13 +188,13 @@ class Importio
         if !@disconnecting and @connected
           # If we get a 402 unknown client we need to reconnect
           if msg["error"] == "402::Unknown client"
-            print "402 received, reconnecting"
+            puts "402 received, reconnecting"
             disconnect()
             connect()
           elsif throw
             raise error_message
           else
-            print error_message
+            puts error_message
           end
         else
           next
@@ -258,7 +262,9 @@ class Importio
     # Call this method to ask the client library to disconnect from the import.io server
     # It is best practice to disconnect when you are finished with querying, so as to clean
     # up resources on both the client and server
-    
+
+    # Remove the existing queries
+    @queries = Hash.new
     # Set the flag to notify handlers that we are disconnecting, i.e. open connect calls will fail
     @disconnecting = true
     # Set the connection status flag in the library to prevent any other requests going out

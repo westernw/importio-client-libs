@@ -181,3 +181,45 @@ if !test7pass
 else
   puts "Test 7: Success"
 end
+
+# Test 8
+#
+# Tests querying a working source twice, with a client ID change in the middle
+test8data = []
+test8pass = true
+
+test8callback = lambda do |query, message|
+  if message["type"] == "MESSAGE"
+    for result in message["data"]["results"]
+      test8data << result["name"]
+    end
+  end
+end
+
+client = Importio::new(userguid, apikey, "https://query." + host)
+client.connect
+client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2"]}, test8callback )
+client.join
+client.client_id = "random"
+sleep(3)
+client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2"]}, test8callback )
+client.join
+client.disconnect
+
+test8data.each_with_index { |value, index|
+  idx = index
+  if idx > expected_data.length-1
+    idx = idx - expected_data.length
+  end
+  if value != expected_data[idx]
+    test8pass = false
+    puts "Test 8: Index #{idx} does not match, expected #{value}"
+  end
+}
+
+if !test8pass
+  puts "Test 8: Failed (returned data did not match)"
+  exit 8
+else
+  puts "Test 8: Success"
+end
