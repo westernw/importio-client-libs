@@ -123,6 +123,11 @@ public class ImportIO {
 	boolean isConnected = false;
 	
 	/**
+	 * Flag to indicate whether we are in the process of connecting to the server
+	 */
+	boolean isConnecting = false;
+	
+	/**
 	 * Flag to indicate whether we are currently in the process of disconnecting
 	 */
 	boolean isDisconnecting = false;
@@ -188,13 +193,14 @@ public class ImportIO {
 	 */
 	public void connect() throws IOException {
 		// If we're already connected then don't reconnect
-		if(isConnected) {
+		if (isConnected || isConnecting) {
 			return;
 		}
-		isConnected = true;
+		
+		isConnecting = true;
 		
 		// If there is no JSON implementation specified, default to the Jackson one
-		if ( jsonImplementation == null ) {
+		if (jsonImplementation == null) {
 			jsonImplementation = new JacksonJsonImplementation();
 		}
 		
@@ -204,6 +210,8 @@ public class ImportIO {
 		// Subscribe to our messaging channel
 		subscribe(MESSAGING_CHANNEL);
 		
+		isConnected = true;
+		
 		// Start the polling background thread (which maintains the connection to the platform)
 		pollThread = new Thread(new Runnable() {
 			public void run() {
@@ -212,6 +220,8 @@ public class ImportIO {
 		});
 		pollThread.setDaemon(true);
 		pollThread.start();
+		
+		isConnecting = false;
 	}
 
 	/**
@@ -361,7 +371,7 @@ public class ImportIO {
 				if ( msg.getSuccessful() != null && ! msg.getSuccessful() ) {
 					String err = "Unsuccessful request:" + msg;
 					// Only identify this as a problem if we are connected and not disconnecting
-					if (this.isConnected && !this.isDisconnecting) {
+					if (this.isConnected && !this.isDisconnecting && !this.isConnecting) {
 						// If we get a 402 unknown client we need to reconnect
 						if (msg.getError() != null && msg.getError().equals("402::Unknown client")) {
 							log.warning("402 received, reconnecting");

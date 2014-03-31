@@ -85,6 +85,7 @@ class Importio
     @cj = HTTP::CookieJar.new
     @queue = Queue.new
     @connected = false
+    @connecting = false
     @disconnecting = false
     # These variables serve to identify this client and its version to the server
     @clientName = "import.io Ruby client"
@@ -185,7 +186,7 @@ class Importio
       # If the message is not successful, i.e. an import.io server error has occurred, decide what action to take
       if msg.has_key?("successful") and msg["successful"] != true 
         error_message = "Unsuccessful request: #{msg}"
-        if !@disconnecting and @connected
+        if !@disconnecting and @connected and !@connecting
           # If we get a 402 unknown client we need to reconnect
           if msg["error"] == "402::Unknown client"
             puts "402 received, reconnecting"
@@ -231,9 +232,11 @@ class Importio
   def connect
     # Connect this client to the import.io server if not already connected
     # Don't connect again if we're already connected
-    if @connected
+    if @connected || @connecting
       return
     end
+
+    @connecting = true
 
     # Do the hanshake request to register the client on the server
     handshake
@@ -256,6 +259,8 @@ class Importio
     @threads << Thread.new(self) { |io|
       io.poll_queue
     }
+
+    @connecting = false
   end
 
   def disconnect

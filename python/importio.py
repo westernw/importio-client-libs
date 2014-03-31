@@ -92,6 +92,7 @@ class importio:
         self.opener = urllib2.build_opener(urllib2.ProxyHandler(self.proxies), urllib2.HTTPCookieProcessor(self.cj))
         self.queue = Queue.Queue()
         self.isConnected = False
+        self.connecting = False
         self.disconnecting = False
         # These variables serve to identify this client and its version to the server
         self.clientName = "import.io Python client"
@@ -159,7 +160,7 @@ class importio:
             # If the message is not successful, i.e. an import.io server error has occurred, decide what action to take
             if "successful" in msg and msg["successful"] is not True:
                 errorMessage = "Unsuccessful request: %s" % msg
-                if not self.disconnecting and self.isConnected:
+                if not self.disconnecting and self.isConnected and not self.connecting:
                     # If we get a 402 unknown client we need to reconnect
                     if msg["error"] == "402::Unknown client":
                         logger.warn("402 received, reconnecting")
@@ -211,8 +212,11 @@ class importio:
         Connect this client to the import.io server if not already connected
         '''
         # Don't connect again if we're already connected
-        if self.isConnected:
+        if self.isConnected or self.connecting:
             return;
+
+        # Record that we are beginning the connection process
+        self.connecting = True
 
         # Do the hanshake request to register the client on the server
         self.handshake()
@@ -234,6 +238,9 @@ class importio:
         queueThread = threading.Thread(target=self.pollQueue, args=())
         queueThread.daemon = True
         queueThread.start()
+
+        # We are finished with the connection process
+        self.connecting = False
 
     def disconnect(self):
         '''
