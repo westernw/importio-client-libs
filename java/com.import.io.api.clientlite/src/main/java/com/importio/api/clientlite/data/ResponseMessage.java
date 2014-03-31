@@ -35,6 +35,11 @@ public class ResponseMessage {
 	String channel;
 	
 	/**
+	 * If there was an error, its code will be here
+	 */
+	String error;
+	
+	/**
 	 * The data payload
 	 * @see QueryMessage
 	 */

@@ -1,7 +1,6 @@
 package com.importio.api.clientlite.test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,7 +13,6 @@ import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
 
-import com.importio.api.clientlite.ImportIO;
 import com.importio.api.clientlite.MessageCallback;
 import com.importio.api.clientlite.data.Progress;
 import com.importio.api.clientlite.data.Query;
@@ -22,35 +20,42 @@ import com.importio.api.clientlite.data.QueryMessage;
 import com.importio.api.clientlite.data.QueryMessage.MessageType;
 
 /**
- * Test 7
+ * Test 8
  * 
- * Tests querying a working source with username and password
+ * Tests querying a working source twice, with a client ID change in the middle
  * 
  * @author dev@import.io
  * @see https://github.com/import-io/importio-client-libs/tree/master/java
  */
-public class IO7Test extends TestHelper {
+public class IO8Test extends TestHelper {
 
 	// This records the data returned
 	private List<String> namesReturned = new ArrayList<String>();
 	
+	// Records the number of disconnect messages received
+	private int disconnects = 0;
+	
+	// Latch for callbacks
+	CountDownLatch latch = new CountDownLatch(1);
+	
 	@Test
 	public void test() {
-		ImportIO client = new ImportIO();
+		TestLibrary client = new TestLibrary(UUID.fromString(userGuid), apiKey);
 		client.setApiHost("https://api." + host);
 		client.setQueryHost("https://query." + host);
 		try {
-			client.login(username, password);
 			client.connect();
 		} catch (IOException e) {
 			fail("Should not have thrown an exception");
 		}
 		
-		final CountDownLatch latch = new CountDownLatch(1);
 		MessageCallback messageCallback = new MessageCallback() {
 			
 			@SuppressWarnings("unchecked")
 			public void onMessage(Query query, QueryMessage message, Progress progress) {
+				if (message.getType() == MessageType.DISCONNECT) {
+					disconnects++;
+				}
 				if (message.getType() == MessageType.MESSAGE) {
 					HashMap<String, Object> resultMessage = (HashMap<String, Object>) message.getData();
 					List<Map<String, String>> results = (List<Map<String, String>>) resultMessage.get("results");
@@ -87,13 +92,46 @@ public class IO7Test extends TestHelper {
 			fail("Should not have thrown an exception");
 		}
 		
+		// Set the client ID to be something random
+		client.setTestClientId("random");
+		
+		// Do second query, which will fail
+		latch = new CountDownLatch(1);
+		try {
+			client.query(query, messageCallback);
+		} catch (IOException e) {
+		}
+		
+		try {
+			latch.await();
+		} catch (InterruptedException e) {
+			fail("Should not have thrown an exception");
+		}
+		
+		// Do final third query, which will succeed
+		latch = new CountDownLatch(1);
+		try {
+			client.query(query, messageCallback);
+		} catch (IOException e) {
+			fail("Should not have thrown an exception");
+		}
+		
+		try {
+			latch.await();
+		} catch (InterruptedException e) {
+			fail("Should not have thrown an exception");
+		}
+		
+		// Finally, clean everything up
 		try {
 			client.disconnect();
 		} catch (IOException e) {
 			fail("Should not have thrown an exception");
 		}
 		
-		assertArrayEquals(expectedNames.toArray(), namesReturned.toArray());
+		assertArrayEquals(expectedNames.toArray(), Arrays.copyOfRange(namesReturned.toArray(), 0, expectedNames.size()));
+		assertArrayEquals(expectedNames.toArray(), Arrays.copyOfRange(namesReturned.toArray(), expectedNames.size(), expectedNames.size()*2));
+		assertEquals(1, disconnects);
 	}
 
 }

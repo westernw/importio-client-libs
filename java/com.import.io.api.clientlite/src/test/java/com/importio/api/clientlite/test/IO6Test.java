@@ -21,7 +21,7 @@ import com.importio.api.clientlite.data.QueryMessage;
 import com.importio.api.clientlite.data.QueryMessage.MessageType;
 
 /**
- * Test 5
+ * Test 6
  * 
  * Tests querying a working source with user GUID and API key
  * 
@@ -86,7 +86,7 @@ public class IO6Test extends TestHelper {
 		}
 		
 		try {
-			client.shutdown();
+			client.disconnect();
 		} catch (IOException e) {
 			fail("Should not have thrown an exception");
 		}

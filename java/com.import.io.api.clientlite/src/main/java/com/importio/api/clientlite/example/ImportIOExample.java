@@ -116,7 +116,7 @@ public class ImportIOExample {
 		
 		// It is best practice to disconnect when you are finished sending queries and getting data - it allows us to
 		// clean up resources on the client and the server
-		client.shutdown();
+		client.disconnect();
 		
 		// Now we can print out the data we got
 		System.out.println("All data received:");

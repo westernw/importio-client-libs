@@ -149,7 +149,8 @@ public class ExecutingQuery {
 		finished = jobsStarted == jobsCompleted && jobsSpawned + 1 == jobsStarted && jobsStarted > 0;
 		
 		// If there is an error or the user is not authorised correctly then mark this query as finished
-		if(message.getType() == MessageType.ERROR || message.getType() == MessageType.UNAUTH || message.getType() == MessageType.CANCEL) {
+		if(message.getType() == MessageType.ERROR || message.getType() == MessageType.UNAUTH ||
+				message.getType() == MessageType.CANCEL || message.getType() == MessageType.DISCONNECT) {
 			finished = true;
 		}
 		

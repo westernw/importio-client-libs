@@ -81,7 +81,7 @@ public class IO4Test extends TestHelper {
 		}
 		
 		try {
-			client.shutdown();
+			client.disconnect();
 		} catch (IOException e) {
 			fail("Should not have thrown an exception");
 		}

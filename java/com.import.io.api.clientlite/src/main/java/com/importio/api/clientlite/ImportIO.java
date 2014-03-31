@@ -13,8 +13,10 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +33,8 @@ import lombok.extern.java.Log;
 
 import com.importio.api.clientlite.data.ExecutingQuery;
 import com.importio.api.clientlite.data.Query;
+import com.importio.api.clientlite.data.QueryMessage;
+import com.importio.api.clientlite.data.QueryMessage.MessageType;
 import com.importio.api.clientlite.data.RequestMessage;
 import com.importio.api.clientlite.data.ResponseMessage;
 import com.importio.api.clientlite.json.JacksonJsonImplementation;
@@ -232,15 +236,23 @@ public class ImportIO {
 	 * 
 	 * @throws IOException
 	 */
-	public void shutdown() throws IOException {
+	public void disconnect() throws IOException {
+		// Send a "disconnected" message to all of the current queries, and then remove them
+		Iterator<Entry<String, ExecutingQuery>> queryIterator = queries.entrySet().iterator();
+		while (queryIterator.hasNext()) {
+			Entry<String, ExecutingQuery> entry = queryIterator.next();
+			QueryMessage message = new QueryMessage();
+			message.setRequestId(entry.getKey());
+			message.setType(MessageType.DISCONNECT);
+			entry.getValue().onMessage(message);
+			queryIterator.remove();
+		}
 		// Set the disconnecting flag to show we are currently in the process of disconnecting
 		isDisconnecting = true;
 		// Prevent any further requests going to the server by removing the connection flag
 		isConnected = false;
 		// Notify the server that we have disconnected
 		request("/meta/disconnect", "", null, true);
-		// Clean up local resources
-		executorService.shutdown();
 		// Now we are disconnected, reset our client ID for the next connection
 		clientId = null;
 		// We have finished disconnecting
@@ -350,8 +362,13 @@ public class ImportIO {
 					String err = "Unsuccessful request:" + msg;
 					// Only identify this as a problem if we are connected and not disconnecting
 					if (this.isConnected && !this.isDisconnecting) {
-						// Only throw the exception if requested to
-						if (throwExceptionOnFail) {
+						// If we get a 402 unknown client we need to reconnect
+						if (msg.getError() != null && msg.getError().equals("402::Unknown client")) {
+							log.warning("402 received, reconnecting");
+							disconnect();
+							connect();
+						} else if (throwExceptionOnFail) {
+							// Only throw the exception if requested to
 							throw new IOException(err);
 						}
 						// Always log out as a problem
@@ -452,6 +469,15 @@ public class ImportIO {
 	 */
 	private void subscribe(String subscription) throws IOException {
 		request("/meta/handshake", "handshake", new RequestMessage().setSubscription(subscription), true);
+	}
+	
+	/**
+	 * Helper method used in tests to override the Client ID
+	 * 
+	 * @param n
+	 */
+	protected void setClientId(String n) {
+		clientId = n;
 	}
 	
 }

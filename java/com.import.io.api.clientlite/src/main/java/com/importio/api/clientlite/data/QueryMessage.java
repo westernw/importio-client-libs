@@ -37,7 +37,9 @@ public class QueryMessage {
 		// A new set of jobs has been spawned
 		SPAWN, 
 		// A job has been cancelled
-		CANCEL
+		CANCEL,
+		// The client has disconnected while the query was in progress
+		DISCONNECT
 	}
 
 	/**

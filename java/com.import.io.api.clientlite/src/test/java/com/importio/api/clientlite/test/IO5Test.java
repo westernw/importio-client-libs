@@ -82,7 +82,7 @@ public class IO5Test extends TestHelper {
 		}
 		
 		try {
-			client.shutdown();
+			client.disconnect();
 		} catch (IOException e) {
 			fail("Should not have thrown an exception");
 		}
