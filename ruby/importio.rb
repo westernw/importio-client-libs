@@ -90,7 +90,7 @@ class Importio
     @clientName = "import.io Ruby client"
     @clientVersion = "2.0.0"
   end
-  
+
   def proxy(host,port)
     # If you want to configure HTTP proxies, use this method to do so
     @proxy_host = host
@@ -180,16 +180,17 @@ class Importio
     for msg in response.body do
       # If the message is not successful, i.e. an import.io server error has occurred, decide what action to take
       if msg.has_key?("successful") and msg["successful"] != true 
-        msg = "Unsuccessful request: #{msg}"
+        error_message = "Unsuccessful request: #{msg}"
         if !@disconnecting and @connected
           # If we get a 402 unknown client we need to reconnect
           if msg["error"] == "402::Unknown client"
+            print "402 received, reconnecting"
             disconnect()
             connect()
           elsif throw
-            raise msg
+            raise error_message
           else
-            print msg
+            print error_message
           end
         else
           next
