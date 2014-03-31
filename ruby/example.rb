@@ -70,9 +70,9 @@ end
 # Issue three queries to the same data source with different inputs
 # You can modify the inputs and connectorGuids so as to query your own sources
 # To find out more, visit the integrate page at http://import.io/data/integrate/#ruby
-client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
-client.query({"input"=>{"query"=>"ubuntu"},"connectorGuids"=>["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
-client.query({"input"=>{"query"=>"clocks"},"connectorGuids"=>["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback )
+client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback)
+client.query({"input"=>{"query"=>"ubuntu"},"connectorGuids"=>["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback)
+client.query({"input"=>{"query"=>"clocks"},"connectorGuids"=>["39df3fe4-c716-478b-9b80-bdbee43bfbde"]}, callback)
 
 puts "Queries dispatched, now waiting for results"
 
