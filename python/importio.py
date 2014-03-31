@@ -160,6 +160,11 @@ class importio:
             if "successful" in msg and msg["successful"] is not True:
                 errorMessage = "Unsuccessful request: %s" % msg
                 if not self.disconnecting and self.isConnected:
+                    # If we get a 402 unknown client we need to reconnect
+                    if msg["error"] == "402::Unknown client":
+                        logger.warn("402 received, reconnecting")
+                        self.disconnect()
+                        self.connect()
                     if throw:
                         raise Exception(errorMessage)
                     else:
@@ -236,6 +241,10 @@ class importio:
         It is best practice to disconnect when you are finished with querying, so as to clean
         up resources on both the client and server
         '''
+        # Send a "disconnected" message to all of the current queries, and then remove them
+        for key, query in self.queries.iteritems():
+            query._onMessage({ "type": "DISCONNECT", "requestId": key })
+        self.queries = {}
         # Set the flag to notify handlers that we are disconnecting, i.e. open connect calls will fail
         self.disconnecting = True
         # Set the connection status flag in the library to prevent any other requests going out
@@ -284,7 +293,7 @@ class importio:
             query._onMessage(data)
 
             # Clean up the query map if the query itself is finished
-            if query.finished(): del self.queries[reqId]
+            if query.finished() and reqId in self.queries: del self.queries[reqId]
         except:
             logger.error("Error", exc_info=True)
         

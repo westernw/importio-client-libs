@@ -9,7 +9,7 @@ Dependencies: Python 2.7
 @source: https://github.com/import-io/importio-client-libs/tree/master/python
 '''
 
-import importio, latch, sys, uuid
+import importio, latch, sys, uuid, time
 
 # Retrieve the credentials from the command line
 host = sys.argv[1]
@@ -197,3 +197,59 @@ if not test7pass:
 	sys.exit(7)
 else:
 	print "Test 7: Success"
+
+'''
+Test 8
+
+Tests querying a working source twice, with a client ID change in the middle
+'''
+test8latch = latch.latch(1)
+test8data = []
+test8pass = True
+test8disconnects = 0
+
+def test8callback(query, message):
+	global test8data, test8disconnects
+
+	if message["type"] == "MESSAGE":
+		for result in message["data"]["results"]:
+			test8data.append(result["name"])
+	if message["type"] == "DISCONNECT":
+		test8disconnects = test8disconnects + 1
+
+	if query.finished(): test8latch.countdown()
+
+client = importio.importio(host= "https://query." + host, userId=userguid, apiKey=apikey)
+client.connect()
+client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
+
+test8latch.await()
+client.clientId = "random"
+test8latch = latch.latch(1)
+# This query will fail
+try:
+	client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
+	print "Test 8: Failed (query which should have thrown did not)"
+	sys.exit(8)
+except:
+	pass
+client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
+test8latch.await()
+client.disconnect()
+
+for index, value in enumerate(test8data):
+	idx = index
+	if idx > len(expectedData)-1:
+		idx = idx - len(expectedData)
+	if value != expectedData[idx]:
+		test8pass = False
+		print "Test 8: Index %i does not match (%s, %s)" % (idx, value, expectedData[idx])
+
+if not test8pass:
+	print "Test 8: Failed (returned data did not match)"
+	sys.exit(8)
+elif test8disconnects != 1:
+	print "Test 8: Failed (wrong number of disconnects)"
+	sys.exit(8)
+else:
+	print "Test 8: Success"
