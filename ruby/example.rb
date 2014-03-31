@@ -45,6 +45,7 @@ data_rows = []
 # This method will receive each message that comes back from the queries, and we can take that
 # data and store it for use in our app
 callback = lambda do |query, message|
+  # Disconnect messages happen if we disconnect the client library while a query is in progress
   if message["type"] == "DISCONNECT"
     puts "The query was cancelled as the client was disconnected"
   end
