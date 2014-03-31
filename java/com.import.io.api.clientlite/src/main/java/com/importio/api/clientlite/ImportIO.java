@@ -152,6 +152,20 @@ public class ImportIO {
 	}
 	
 	/**
+	 * Construct a new client with User GUID and API key authentication, and a hostname to connect to
+	 * 
+	 * @param userId
+	 * @param apiKey
+	 */
+	public ImportIO(UUID userId, String apiKey, String host) {
+		this.userId = userId;
+		this.apiKey = apiKey;
+		this.apiHost = "https://api." + host;
+		this.queryHost = "https://query." + host;
+		setupCookieHandler();
+	}
+	
+	/**
 	 * Authenticates the user with username and password on the import.io platform - note this is not
 	 * required if the client library is initialised with a user GUID and API key
 	 * 

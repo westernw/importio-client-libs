@@ -101,7 +101,7 @@ public class ImportIOExample {
 			UUID.fromString("39df3fe4-c716-478b-9b80-bdbee43bfbde")
 		);
 		
-		// Generate query objects using the 
+		// Generate query objects using the helper method below
 		Query q1 = generateQueryObject(connectorGuids, "server");
 		client.query(q1, messageCallback);
 		
