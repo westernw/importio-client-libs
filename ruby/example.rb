@@ -45,6 +45,9 @@ data_rows = []
 # This method will receive each message that comes back from the queries, and we can take that
 # data and store it for use in our app
 callback = lambda do |query, message|
+  if message["type"] == "DISCONNECT"
+    puts "The query was cancelled as the client was disconnected"
+  end
   if message["type"] == "MESSAGE"
     if message["data"].key?("errorType")
       # In this case, we received a message, but it was an error from the external service

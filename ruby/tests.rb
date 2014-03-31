@@ -187,12 +187,16 @@ end
 # Tests querying a working source twice, with a client ID change in the middle
 test8data = []
 test8pass = true
+test8disconnects = 0
 
 test8callback = lambda do |query, message|
   if message["type"] == "MESSAGE"
     for result in message["data"]["results"]
       test8data << result["name"]
     end
+  end
+  if message["type"] == "DISCONNECT"
+    test8disconnects = test8disconnects + 1
   end
 end
 
@@ -201,7 +205,8 @@ client.connect
 client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2"]}, test8callback )
 client.join
 client.client_id = "random"
-sleep(3)
+# This query will fail
+client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2"]}, test8callback )
 client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2"]}, test8callback )
 client.join
 client.disconnect
@@ -220,6 +225,8 @@ test8data.each_with_index { |value, index|
 if !test8pass
   puts "Test 8: Failed (returned data did not match)"
   exit 8
+elsif test8disconnects != 1
+  puts "Test 8: Failed (did not have right number of disconnected queries)"
 else
   puts "Test 8: Success"
 end

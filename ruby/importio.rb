@@ -263,7 +263,10 @@ class Importio
     # It is best practice to disconnect when you are finished with querying, so as to clean
     # up resources on both the client and server
 
-    # Remove the existing queries
+    # Send a "disconnected" message to all of the current queries, and then remove them
+    @queries.each { |key, query|
+      query._on_message({"type"=>"DISCONNECT","requestId"=>key})
+    }
     @queries = Hash.new
     # Set the flag to notify handlers that we are disconnecting, i.e. open connect calls will fail
     @disconnecting = true
