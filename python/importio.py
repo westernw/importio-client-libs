@@ -109,7 +109,7 @@ class importio:
             self.disconnect()
     
         if self.username is not None:
-            self.session.login(self.username,self.password,self.loginHost)
+            self.login(self.username,self.password,self.loginHost)
         else:
             self.connect()
 
