@@ -80,25 +80,115 @@ class importio:
         '''
         self.host = host
         self.proxies = proxies
-        self.cookies = {}
+        self.host = host
+        self.proxies = proxies
+        self.userId = userId
+        self.apiKey = apiKey
+        self.session = None
+        self.username = None
+        self.queue = []
+
+    def login(self, username, password, host="https://api.import.io"):
+        '''
+        If you want to use cookie-based authentication, this method will log you in with a username and password to get a session
+        '''
+        self.username = username
+        self.password = password
+        self.loginHost = host
+
+        if self.session is None:
+            self.connect()
+
+        self.session.login(self.username,self.password,self.loginHost)
+
+    def reconnect(self):
+
+        logger.info("Reconnecting")
+
+        if self.session is not None:
+            self.disconnect()
+    
+        if self.username is not None:
+            self.session.login(self.username,self.password,self.loginHost)
+        else:
+            self.connect()
+
+    def connect(self):
+        '''
+        Connect this client to the import.io server if not already connected
+        '''
+
+        logger.info("Connecting")
+
+        if self.session is not None:
+            logger.warning("Already have a session, using that; call disconnect() to end it")
+            return
+
+        self.session = session(self, self.host, self.proxies, self.userId, self.apiKey)
+        self.session.connect()
+
+        q = self.queue
+        self.queue = []
+
+        [self.query(query,callback) for [query,callback] in q]
+
+    def disconnect(self):
+        '''
+        Call this method to ask the client library to disconnect from the import.io server
+        It is best practice to disconnect when you are finished with querying, so as to clean
+        up resources on both the client and server
+        '''
+
+        logger.info("Disconnecting")
+
+        self.session.disconnect()
+        self.session = None
+
+    def query(self, query, callback):
+        '''
+        This method takes an import.io Query object and issues it to the server, calling the callback
+        whenever a relevant message is received
+        '''
+
+        if self.session is None or not self.session.connected:
+            logger.info("Queueing query: no connected session")
+            self.queue.append([query,callback])
+            return
+
+        logger.info("Making a query")
+
+        self.session.query(query, callback)
+
+class session:
+    '''
+    The main import.io client, used for managing the message channel and sending queries and receiving data
+    '''
+    
+    def __init__(self, io, host, proxies, userId, apiKey):
+        '''
+        Initialises the client library with its configuration
+        '''
+        self.io = io
         self.msgId = 1
         self.clientId = None
+        self.cookies = {}
         self.url = "%s/query/comet/" % host
         self.messagingChannel = u"/messaging"
         self.queries = {}
         self.userId = userId
         self.apiKey = apiKey
-        self.cj = cookielib.CookieJar()
-        self.opener = urllib2.build_opener(urllib2.ProxyHandler(self.proxies), urllib2.HTTPCookieProcessor(self.cj))
         self.queue = Queue.Queue()
-        self.isConnected = False
+        self.connected = False
         self.connecting = False
         self.disconnecting = False
+        self.polling = False
         # These variables serve to identify this client and its version to the server
         self.clientName = "import.io Python client"
         self.clientVersion = "2.0.0"
-    
-    def login(self, username, password, host="https://api.import.io"):
+        self.cj = cookielib.CookieJar()
+        self.opener = urllib2.build_opener(urllib2.ProxyHandler(proxies), urllib2.HTTPCookieProcessor(self.cj))
+
+    def login(self, username, password, host):
         '''
         If you want to use cookie-based authentication, this method will log you in with a username and password to get a session
         '''
@@ -142,11 +232,21 @@ class importio:
         try:
             response = self.opener.open(request)
         except urllib2.HTTPError:
-            raise Exception("Exception raised connecting to import.io for url %s" % url)
+            errorMessage = "Exception raised connecting to import.io for url %s" % url
+            if throw:
+                raise Exception(errorMessage)
+            else:
+                logger.warn(errorMessage)
+                return
 
         # If the server responds non-200 we have a serious issue (configuration wrong or server down)
         if response.code != 200 :
-            raise Exception("Unable to connect to import.io, status %s for url %s" % (response.code, url))
+            errorMessage = "Unable to connect to import.io, status %s for url %s" % (response.code, url)
+            if throw:
+                raise Exception(errorMessage)
+            else:
+                logger.warn(errorMessage)
+                return
         
         # If the data comes back as gzip, we need to manually decode it
         if response.info().get('Content-Encoding') == 'gzip':
@@ -160,12 +260,14 @@ class importio:
             # If the message is not successful, i.e. an import.io server error has occurred, decide what action to take
             if "successful" in msg and msg["successful"] is not True:
                 errorMessage = "Unsuccessful request: %s" % msg
-                if not self.disconnecting and self.isConnected and not self.connecting:
+                if not self.disconnecting and self.connected and not self.connecting:
+                    
                     # If we get a 402 unknown client we need to reconnect
                     if msg["error"] == "402::Unknown client":
                         logger.warn("402 received, reconnecting")
                         self.disconnect()
-                        self.connect()
+                        self.io.reconnect()
+
                     if throw:
                         raise Exception(errorMessage)
                     else:
@@ -176,6 +278,8 @@ class importio:
             # Ignore messages that come back on a CometD channel that we have not subscribed to
             if msg["channel"] != self.messagingChannel : continue
                 
+            logger.debug("Got message")
+
             # Now we have a valid message on the right channel, queue it up to be processed
             self.queue.put(msg["data"])
         
@@ -186,6 +290,9 @@ class importio:
         '''
         This method uses the request helper to make a CometD handshake request to register the client on the server
         '''
+
+        logger.info("Handshaking")
+
         # Make the handshake request
         handshake = self.request("/meta/handshake", path="handshake", data={
             "version": "1.0",
@@ -203,6 +310,9 @@ class importio:
         '''
         This method uses the request helper to issue a CometD subscription request for this client on the server
         '''
+
+        logger.info("Subscribing")
+
         return self.request("/meta/subscribe", data={
             "subscription": channel
         })
@@ -212,8 +322,8 @@ class importio:
         Connect this client to the import.io server if not already connected
         '''
         # Don't connect again if we're already connected
-        if self.isConnected or self.connecting:
-            return;
+        if self.connected or self.connecting:
+            return
 
         # Record that we are beginning the connection process
         self.connecting = True
@@ -225,7 +335,7 @@ class importio:
         self.subscribe(self.messagingChannel)
 
         # Now we are subscribed, we can set the client as connected
-        self.isConnected = True
+        self.connected = True
 
         # Python's HTTP requests are synchronous - so that user apps can run while we are waiting for long connections
         # from the import.io server, we need to pass the long-polling connection off to a thread so it doesn't block
@@ -248,20 +358,29 @@ class importio:
         It is best practice to disconnect when you are finished with querying, so as to clean
         up resources on both the client and server
         '''
-        # Send a "disconnected" message to all of the current queries, and then remove them
-        for key, query in self.queries.iteritems():
-            query._onMessage({ "type": "DISCONNECT", "requestId": key })
+
+        q = self.queries
         self.queries = {}
+
         # Set the flag to notify handlers that we are disconnecting, i.e. open connect calls will fail
         self.disconnecting = True
+        
         # Set the connection status flag in the library to prevent any other requests going out
-        self.isConnected = False
+        self.connected = False
+        
         # Make the disconnect request to the server
-        self.request("/meta/disconnect", throw=True)
+        self.request("/meta/disconnect", throw=False)
+
         # Now we are disconnected we need to remove the client ID
         self.clientId = None
+        
         # We are done disconnecting so reset the flag
         self.disconnecting = False
+
+        # Send a "disconnected" message to all of the current queries, and then remove them
+        for key, query in q.iteritems():
+            query._onMessage({ "type": "DISCONNECT", "requestId": key })
+
 
     def pollQueue(self):
         '''
@@ -269,7 +388,7 @@ class importio:
         and process them
         '''
         # This while will mean the thread keeps going until the client library is disconnected
-        while self.isConnected:
+        while self.connected:
             try:
                 # Attempt to process the last message on the queue
                 self.processMessage(self.queue.get())
@@ -281,11 +400,22 @@ class importio:
         This method is called in a new thread to open long-polling HTTP connections to the import.io
         CometD server so that we can wait for any messages that the server needs to send to us
         '''
-        # While loop means we keep making connections until manually disconnected
-        while self.isConnected:
-            # Use the request helper to make the connect call to the CometD endpoint
-            self.request("/meta/connect", path="connect", throw=False)
-        
+
+        if self.polling :
+            logger.warning("Already polling, bailing")
+            return
+
+        self.polling = True
+
+        try:
+            # While loop means we keep making connections until manually disconnected
+            while self.connected:
+                # Use the request helper to make the connect call to the CometD endpoint
+                self.request("/meta/connect", path="connect", throw=False)
+
+        finally:
+            self.polling = False
+
     def processMessage(self, data):
         '''
         This method is called by the queue poller to handle messages that are received from the import.io
@@ -309,6 +439,7 @@ class importio:
         This method takes an import.io Query object and issues it to the server, calling the callback
         whenever a relevant message is received
         '''
+
         # Set the request ID to a random GUID
         # This allows us to track which messages correspond to which query
         query["requestId"] = str(uuid.uuid4())
