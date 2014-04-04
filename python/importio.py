@@ -265,8 +265,8 @@ class session:
                     # If we get a 402 unknown client we need to reconnect
                     if msg["error"] == "402::Unknown client":
                         logger.warn("402 received, reconnecting")
-                        self.disconnect()
                         self.io.reconnect()
+                        continue
 
                     if throw:
                         raise Exception(errorMessage)
