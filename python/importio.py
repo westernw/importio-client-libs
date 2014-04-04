@@ -239,6 +239,10 @@ class session:
                 logger.warn(errorMessage)
                 return
 
+        # Bail if we've disconnected in the meantime
+        if not self.connected and not self.connecting:
+            return
+
         # If the server responds non-200 we have a serious issue (configuration wrong or server down)
         if response.code != 200 :
             errorMessage = "Unable to connect to import.io, status %s for url %s" % (response.code, url)
@@ -301,6 +305,10 @@ class session:
                 "interval": 0
             }
         })
+
+        if handshake is None:
+            return
+
         # Set the Client ID from the handshake's response
         self.clientId = handshake.json[0]["clientId"]
 
