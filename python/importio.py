@@ -266,13 +266,11 @@ class session:
                     if msg["error"] == "402::Unknown client":
                         logger.warn("402 received, reconnecting")
                         self.io.reconnect()
-                        continue
 
-                    if throw:
-                        raise Exception(errorMessage)
-                    else:
-                        logger.warn(errorMessage)
+                if throw:
+                    raise Exception(errorMessage)
                 else:
+                    logger.warn(errorMessage)
                     continue
         
             # Ignore messages that come back on a CometD channel that we have not subscribed to
