@@ -155,15 +155,18 @@ class importio:
         up resources on both the client and server
         '''
 
-        logger.info("Disconnecting")
+        if self.session:
+            logger.info("Disconnecting")
 
-        self.session.disconnect()
-        self.session = None
+            self.session.disconnect()
+            self.session = None
+        else:
+            logger.info("Already disconnected")
 
     def query(self, query, callback):
         '''
-        This method takes an import.io Query object and issues it to the server, calling the callback
-        whenever a relevant message is received
+        This method takes an import.io Query object and either queues it, or issues it to the server
+        depending on whether the session is connected
         '''
 
         if self.session is None or not self.session.connected:
@@ -420,7 +423,7 @@ class session:
         while self.connected:
             try:
                 # Attempt to process the last message on the queue
-                self.processMessage(self.queue.get())
+                self.process_message(self.queue.get())
             except:
                 logger.error("Error", exc_info=True)
 
@@ -446,7 +449,7 @@ class session:
         finally:
             self.polling = False
 
-    def processMessage(self, data):
+    def process_message(self, data):
         '''
         This method is called by the queue poller to handle messages that are received from the import.io
         CometD server
