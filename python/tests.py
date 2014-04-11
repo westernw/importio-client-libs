@@ -23,7 +23,9 @@ Test 1
 
 Test that specifying incorrect username and password raises an exception
 '''
+
 client = importio.importio(host= "http://query." + host)
+
 try:
 	client.login(str(uuid.uuid4()), str(uuid.uuid4()), host = "https://api." + host)
 	print "Test 1: Failed (did not throw exception)"
@@ -55,8 +57,8 @@ Test 3
 Test that providing an incorrect API key raises an exception
 '''
 
-
 client = importio.importio(host= "http://query." + host, userId=userguid, apiKey=str(uuid.uuid4()))
+
 try:
 	client.connect()
 	print "Test 3: Failed (did not throw exception)"
@@ -70,6 +72,7 @@ Test 4
 
 Test that querying a source that doesn't exist returns an error
 '''
+
 test4latch = latch.latch(1)
 test4pass = False
 
@@ -101,6 +104,7 @@ Test 5
 
 Test that querying a source that returns an error is handled correctly
 '''
+
 test5latch = latch.latch(1)
 test5pass = False
 
@@ -127,7 +131,7 @@ if not test5pass:
 else:
 	print "Test 5: Success"
 
-# Set up the expected data for the next two tests
+# Set up the expected data for the query tests
 expectedData = [
 	"Iron Man",
 	"Captain America",
@@ -142,6 +146,7 @@ Test 6
 
 Tests querying a working source with user GUID and API key
 '''
+
 test6latch = latch.latch(1)
 test6data = []
 test6pass = True
@@ -178,6 +183,7 @@ Test 7
 
 Tests querying a working source with username and password
 '''
+
 test7latch = latch.latch(1)
 test7data = []
 test7pass = True
@@ -214,6 +220,7 @@ Test 8
 
 Tests querying a working source twice, with a client ID change in the middle
 '''
+
 test8latch = latch.latch(1)
 test8data = []
 test8pass = True
@@ -236,10 +243,11 @@ client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28
 
 test8latch.await()
 
-print "Hacking clientId"
+print "Modifying clientId of the library for testing purposes"
 
 client.session.clientId = "random"
 test8latch = latch.latch(1)
+
 # This query will fail
 try:
 	client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
@@ -247,6 +255,7 @@ try:
 	sys.exit(8)
 except:
 	pass
+
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
 test8latch.await()
 client.disconnect()

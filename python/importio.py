@@ -26,6 +26,7 @@ class query_state:
         '''
         Initialises the new query object with inputs and default state
         '''
+
         self.query = query
         self.jobsSpawned = 0
         self.jobsStarted = 0
@@ -67,17 +68,19 @@ class query_state:
         '''
         Returns boolean - true if the query has been completed or terminated
         '''
+
         return self._finished
 
 class importio:
     '''
-    The main import.io client, used for managing the message channel and sending queries and receiving data
+    The main import.io client interface
     '''
     
     def __init__(self, host="https://query.import.io", proxies={}, userId=None, apiKey=None):
         '''
         Initialises the client library with its configuration
         '''
+
         self.host = host
         self.proxies = proxies
         self.host = host
@@ -92,22 +95,31 @@ class importio:
         '''
         If you want to use cookie-based authentication, this method will log you in with a username and password to get a session
         '''
+
+        # Copy the configuration to the local state of the library
         self.username = username
         self.password = password
         self.loginHost = host
 
+        # If we don't have a session, then connect one
         if self.session is None:
             self.connect()
 
-        self.session.login(self.username,self.password,self.loginHost)
+        # Once connected, do the login
+        self.session.login(self.username, self.password, self.loginHost)
 
     def reconnect(self):
+        '''
+        Reconnects the client to the platform by establishing a new session
+        '''
 
         logger.info("Reconnecting")
 
+        # Disconnect an old session, if there is one
         if self.session is not None:
             self.disconnect()
     
+        # Reconnect using username/password if required
         if self.username is not None:
             self.login(self.username,self.password,self.loginHost)
         else:
@@ -120,17 +132,21 @@ class importio:
 
         logger.info("Connecting")
 
+        # Check if there is a session already first
         if self.session is not None:
             logger.warning("Already have a session, using that; call disconnect() to end it")
             return
 
+        # Create a new session and connect it
         self.session = session(self, self.host, self.proxies, self.userId, self.apiKey)
         self.session.connect()
 
+        # Make a copy of the pending query queue, and then empty it
         q = self.queue
         self.queue = []
 
-        [self.query(query,callback) for [query,callback] in q]
+        # Execute each of the queued queries
+        [self.query(query, callback) for [query, callback] in q]
 
     def disconnect(self):
         '''
@@ -155,19 +171,20 @@ class importio:
             self.queue.append([query,callback])
             return
 
-        logger.info("Making a query")
+        logger.info("Issuing query")
 
         self.session.query(query, callback)
 
 class session:
     '''
-    The main import.io client, used for managing the message channel and sending queries and receiving data
+    Session manager, used for managing the message channel and sending queries and receiving data
     '''
     
     def __init__(self, io, host, proxies, userId, apiKey):
         '''
-        Initialises the client library with its configuration
+        Initialises the session with its configuration
         '''
+
         self.io = io
         self.msgId = 1
         self.clientId = None
@@ -190,8 +207,9 @@ class session:
 
     def login(self, username, password, host):
         '''
-        If you want to use cookie-based authentication, this method will log you in with a username and password to get a session
+        Provides an interface to authenticating with the platform using username and password
         '''
+
         r = self.opener.open("%s/auth/login" % host, urllib.urlencode( {'username': username, 'password': password} ) ) 
 
         if r.code is not 200:
@@ -201,6 +219,7 @@ class session:
         '''
         Helper method that makes a generic request on the messaging channel
         '''
+
         # These are CometD configuration values that are common to all requests we need to send
         data["channel"] = channel
         data["connectionType"] = "long-polling"
@@ -239,7 +258,7 @@ class session:
                 logger.warn(errorMessage)
                 return
 
-        # Bail if we've disconnected in the meantime
+        # Don't process the response if we've disconnected in the meantime
         if not self.connected and not self.connecting:
             return
 
@@ -306,6 +325,7 @@ class session:
             }
         })
 
+        # If there was nothing returned then don't set the client ID
         if handshake is None:
             return
 
@@ -325,8 +345,9 @@ class session:
     
     def connect(self):
         '''
-        Connect this client to the import.io server if not already connected
+        Connect this session to the import.io server if not already connected
         '''
+
         # Don't connect again if we're already connected
         if self.connected or self.connecting:
             return
@@ -346,14 +367,14 @@ class session:
         # Python's HTTP requests are synchronous - so that user apps can run while we are waiting for long connections
         # from the import.io server, we need to pass the long-polling connection off to a thread so it doesn't block
         # anything else
-        pollThread = threading.Thread(target=self.poll, args=())
-        pollThread.daemon = True
-        pollThread.start()
+        self.poll_thread = threading.Thread(target=self.poll, args=())
+        self.poll_thread.daemon = True
+        self.poll_thread.start()
         
         # Similarly with the polling, we need to handle queued messages in a separate thread too
-        queueThread = threading.Thread(target=self.pollQueue, args=())
-        queueThread.daemon = True
-        queueThread.start()
+        self.queue_thread = threading.Thread(target=self.poll_queue, args=())
+        self.queue_thread.daemon = True
+        self.queue_thread.start()
 
         # We are finished with the connection process
         self.connecting = False
@@ -365,6 +386,7 @@ class session:
         up resources on both the client and server
         '''
 
+        # Maintain a local value of the queries, and then erase them from the class
         q = self.queries
         self.queries = {}
 
@@ -388,11 +410,12 @@ class session:
             query._onMessage({ "type": "DISCONNECT", "requestId": key })
 
 
-    def pollQueue(self):
+    def poll_queue(self):
         '''
         This method is called in a new thread to poll the queue of messages returned from the server
         and process them
         '''
+
         # This while will mean the thread keeps going until the client library is disconnected
         while self.connected:
             try:
@@ -407,8 +430,9 @@ class session:
         CometD server so that we can wait for any messages that the server needs to send to us
         '''
 
-        if self.polling :
-            logger.warning("Already polling, bailing")
+        # Make sure we are not polling already first
+        if self.polling:
+            logger.warning("Already polling, so not polling again")
             return
 
         self.polling = True
@@ -430,6 +454,12 @@ class session:
         try:
             # First we need to look up which query object the message corresponds to, based on its request ID
             reqId = data["requestId"]
+
+            # If we don't recognise the client ID, then do not process the message
+            if not reqId in self.queries:
+                logger.warning("Unknown Client ID returned from server: %s" % reqId)
+                return
+            
             query = self.queries[reqId]
 
             # Call the message callback on the query object with the data
