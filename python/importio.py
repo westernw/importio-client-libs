@@ -459,7 +459,7 @@ class session:
 
             # If we don't recognise the client ID, then do not process the message
             if not request_id in self.queries:
-                logger.warning("Unknown Client ID returned from server: %s" % request_id)
+                logger.warning("Unknown Request ID returned from server: %s" % request_id)
                 return
             
             query = self.queries[request_id]
@@ -468,7 +468,7 @@ class session:
             query._onMessage(data)
 
             # Clean up the query map if the query itself is finished
-            if query.finished() and request_id in self.queries:
+            if query.finished():
                 del self.queries[request_id]
         except:
             logger.error("Error", exc_info=True)
