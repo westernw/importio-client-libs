@@ -70,38 +70,151 @@ end
 class Importio
   # The main import.io client, used for managing the message channel and sending queries and receiving data
 
-  def initialize(userId=nil, apiKey=nil, host="https://query.import.io")
+  def initialize(user_id=nil, api_key=nil, host="https://query.import.io")
     # Initialises the client library with its configuration
     @host = host
     @proxy_host = nil
     @proxy_port = nil
+    @user_id = user_id
+    @api_key = api_key
+    @username = nil
+    @password = nil
+    @login_host = nil
+    @session = nil
+    @queue = Queue.new
+  end
+
+  # We use this only for a specific test case
+  attr_reader :session
+
+  def proxy(host, port)
+    # If you want to configure an HTTP proxy, use this method to do so
+    @proxy_host = host
+    @proxy_port = port
+  end
+  
+  def login(username, password, host="https://api.import.io")
+    # If you want to use cookie-based authentication, this method will log you in with a username and password to get a session
+    @username = username
+    @password = password
+    @login_host = host
+
+    # If we don't have a session, then connect one
+    if @session == nil
+      connect()
+    end
+
+    # Once connected, do the login
+    @session.login(@username, @password, @login_host)
+  end
+
+  def reconnect
+    # Reconnects the client to the platform by establishing a new session
+    
+    # Disconnect an old session, if there is one
+    if @session != nil
+      disconnect()
+    end
+
+    if @username != nil
+      login(@username, @password, @login_host)
+    else
+      connect()
+    end
+  end
+
+  def connect
+    # Connect this client to the import.io server if not already connected
+
+    # Check if there is a session already first
+    if @session != nil
+      return
+    end
+
+    @session = Session::new(self, @host, @user_id, @api_key, @proxy_host, @proxy_port)
+    @session.connect()
+
+    q = @queue.clone
+    @queue = Queue.new
+
+    until q.empty?
+      query_data = q.pop(true) rescue nil
+      if query_data
+        query(query_data.query, query_data.callback)
+      end
+    end
+  end
+
+  def disconnect
+    # Call this method to ask the client library to disconnect from the import.io server
+    # It is best practice to disconnect when you are finished with querying, so as to clean
+    # up resources on both the client and server
+
+    if @session != nil
+      @session.disconnect()
+      @session = nil
+    end
+  end
+
+  def stop
+    # This method stops all of the threads that are currently running in the session
+    if @session != nil
+      return @session.stop()
+    end
+  end
+  
+  def join
+    # This method joins the threads that are running together in the session, so we can wait for them to be finished
+    if @session != nil
+      return @session.join()
+    end
+  end
+
+  def query(query, callback)
+    # This method takes an import.io Query object and either queues it, or issues it to the server
+    # depending on whether the session is connected
+    
+    if @session == nil || !@session.connected
+      @queue << {"query"=>query,"callback"=>callback}
+      return
+    end
+
+    @session.query(query, callback)
+  end
+
+end
+
+class Session
+  # Session manager, used for managing the message channel, sending queries and receiving data
+
+  def initialize(io, host="https://query.import.io", user_id=nil, api_key=nil, proxy_host=nil, proxy_port=nil)
+    # Initialises the client library with its configuration
+    @io = io
     @msg_id = 1
     @client_id = nil
     @url = "#{host}/query/comet/"
     @messaging_channel = "/messaging"
     @queries = Hash.new
-    @userId = userId
-    @apiKey = apiKey
-    @cj = HTTP::CookieJar.new
+    @user_id = user_id
+    @api_key = api_key
     @queue = Queue.new
     @connected = false
     @connecting = false
     @disconnecting = false
+    @polling = false
     # These variables serve to identify this client and its version to the server
     @clientName = "import.io Ruby client"
     @clientVersion = "2.0.0"
+    @cj = HTTP::CookieJar.new
+    @proxy_host = proxy_host
+    @proxy_port = proxy_port
   end
 
   # We use this only for a specific test case
   attr_reader :client_id
   attr_writer :client_id
+  attr_reader :connected
 
-  def proxy(host,port)
-    # If you want to configure HTTP proxies, use this method to do so
-    @proxy_host = host
-    @proxy_port = port
-  end
-  
   def make_request(url, data)
     # Helper method that generates a request object
     uri = URI(url)
@@ -160,8 +273,8 @@ class Importio
     url = "#{@url}#{path}"
     
     # If the user has chosen API key authentication, we need to send the API key with each request
-    if @apiKey != nil
-      q = encode({ "_user" => @userId, "_apikey" => @apiKey })
+    if @api_key != nil
+      q = encode({ "_user" => @user_id, "_apikey" => @api_key })
       url = "#{url}?#{q}"
     end
     
@@ -175,12 +288,24 @@ class Importio
     
     # Send the request itself
     response = open(uri, http, request)
-    if response.code != "200" 
-      raise "Unable to connect to import.io, status #{response.code} for url #{url}"
+
+    # Don't process the response if we've disconnected in the meantime
+    if !@connected and !@connecting
+      return
+    end
+
+    # If the server responds non-200 we have a serious issue (configuration wrong or server down)
+    if response.code != "200"
+      error_message = "Unable to connect to import.io, status #{response.code} for url #{url}"
+      if throw
+        raise error_message
+      else
+        puts error_message
+      end
     end
     
     response.body = JSON.parse(response.body)
-    
+
     # Iterate through each of the messages in the response content
     for msg in response.body do
       # If the message is not successful, i.e. an import.io server error has occurred, decide what action to take
@@ -190,8 +315,7 @@ class Importio
           # If we get a 402 unknown client we need to reconnect
           if msg["error"] == "402::Unknown client"
             puts "402 received, reconnecting"
-            disconnect()
-            connect()
+            @io.reconnect()
           elsif throw
             raise error_message
           else
@@ -200,7 +324,6 @@ class Importio
         else
           next
         end
-
       end
       
       # Ignore messages that come back on a CometD channel that we have not subscribed to
@@ -210,16 +333,19 @@ class Importio
 
       # Now we have a valid message on the right channel, queue it up to be processed
       @queue.push(msg["data"])
-    
     end
     
     return response
-  
   end
   
   def handshake
     # This method uses the request helper to make a CometD handshake request to register the client on the server
     handshake = request("/meta/handshake", path="handshake", data={"version"=>"1.0","minimumVersion"=>"0.9","supportedConnectionTypes"=>["long-polling"],"advice"=>{"timeout"=>60000,"interval"=>0}})
+    
+    if handshake == nil
+      return
+    end
+
     # Set the Client ID from the handshake's response
     @client_id = handshake.body[0]["clientId"]
   end
@@ -251,13 +377,13 @@ class Importio
     # from the import.io server, we need to pass the long-polling connection off to a thread so it doesn't block
     # anything else
     @threads = []
-    @threads << Thread.new(self) { |io|
-      io.poll
+    @threads << Thread.new(self) { |context|
+      context.poll
     }
 
     # Similarly with the polling, we need to handle queued messages in a separate thread too
-    @threads << Thread.new(self) { |io|
-      io.poll_queue
+    @threads << Thread.new(self) { |context|
+      context.poll_queue
     }
 
     @connecting = false
@@ -268,24 +394,33 @@ class Importio
     # It is best practice to disconnect when you are finished with querying, so as to clean
     # up resources on both the client and server
 
-    # Send a "disconnected" message to all of the current queries, and then remove them
-    @queries.each { |key, query|
-      query._on_message({"type"=>"DISCONNECT","requestId"=>key})
-    }
+    # Maintain a local value of the queries, and then erase them from the class
+    q = @queries.clone
     @queries = Hash.new
+
     # Set the flag to notify handlers that we are disconnecting, i.e. open connect calls will fail
     @disconnecting = true
+
     # Set the connection status flag in the library to prevent any other requests going out
     @connected = false
+
     # Make the disconnect request to the server
     request("/meta/disconnect");
+
     # Now we are disconnected we need to remove the client ID
     @client_id = nil
+
     # We are done disconnecting so reset the flag
     @disconnecting = false
+
+    # Send a "disconnected" message to all of the current queries, and then remove them
+    q.each { |key, query|
+      query._on_message({"type"=>"DISCONNECT","requestId"=>key})
+    }
   end
 
   def stop
+    # This method stops all of the threads that are currently running
     @threads.each { |thread| 
       thread.terminate
     }
@@ -296,7 +431,7 @@ class Importio
     while @connected
       if @queries.length == 0
         # When there are no more queries, stop all the threads
-        stop
+        stop()
         return
       end
       sleep 1
@@ -322,11 +457,19 @@ class Importio
     # This method is called in a new thread to open long-polling HTTP connections to the import.io
     # CometD server so that we can wait for any messages that the server needs to send to us
     
+    if @polling
+      return
+    end
+
+    @polling = true
+
     # While loop means we keep making connections until manually disconnected
     while @connected
       # Use the request helper to make the connect call to the CometD endpoint
       request("/meta/connect", "connect", {}, false)
     end
+
+    @polling = false
   end
     
   def process_message(data)
@@ -337,6 +480,7 @@ class Importio
       request_id = data["requestId"]
       query = @queries[request_id]
       
+      # If we don't recognise the client ID, then do not process the message
       if query == nil 
         puts "No open query #{query}:"
         puts JSON.pretty_generate(data)

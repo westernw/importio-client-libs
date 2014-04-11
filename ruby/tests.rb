@@ -22,14 +22,16 @@ apikey = ARGV[4]
 # Test 1
 #
 # Test that specifying incorrect username and password raises an exception
+client = Importio::new(nil, nil, "https://query." + host)
 begin
-  client = Importio::new(nil, nil, "https://query." + host)
   client.login(SecureRandom.uuid, SecureRandom.uuid, "https://api." + host)
   puts "Test 1: Failed (did not throw exception)"
   exit 1
 rescue
   puts "Test 1: Success"
 end
+
+client.disconnect
 
 # Test 2
 #
@@ -204,7 +206,7 @@ client = Importio::new(userguid, apikey, "https://query." + host)
 client.connect
 client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2"]}, test8callback )
 client.join
-client.client_id = "random"
+client.session.client_id = "random"
 # This query will fail
 client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2"]}, test8callback )
 client.query({"input"=>{"query"=>"server"},"connectorGuids"=>["1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2"]}, test8callback )
