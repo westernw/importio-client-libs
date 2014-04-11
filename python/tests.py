@@ -16,64 +16,77 @@ host = sys.argv[1]
 username = sys.argv[2]
 password = sys.argv[3]
 userguid = sys.argv[4]
-apikey = sys.argv[5]
+api_key = sys.argv[5]
 
 '''
 Test 1
 
 Test that specifying incorrect username and password raises an exception
 '''
+
+client = importio.importio(host= "http://query." + host)
+
 try:
-	client = importio.importio(host= "https://query." + host)
 	client.login(str(uuid.uuid4()), str(uuid.uuid4()), host = "https://api." + host)
 	print "Test 1: Failed (did not throw exception)"
 	sys.exit(1)
 except Exception:
 	print "Test 1: Success"
 
+client.disconnect()
+
 '''
 Test 2
 
 Test that providing an incorrect user GUID raises an exception
 '''
+
+client = importio.importio(host= "http://query." + host, user_id=str(uuid.uuid4()), api_key=api_key)
+
 try:
-	client = importio.importio(host= "https://query." + host, userId=str(uuid.uuid4()), apiKey=apikey)
 	client.connect()
 	print "Test 2: Failed (did not throw exception)"
 	sys.exit(2)
 except Exception:
 	print "Test 2: Success"
 
+
 '''
 Test 3
 
 Test that providing an incorrect API key raises an exception
 '''
+
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=str(uuid.uuid4()))
+
 try:
-	client = importio.importio(host= "https://query." + host, userId=userguid, apiKey=str(uuid.uuid4()))
 	client.connect()
 	print "Test 3: Failed (did not throw exception)"
 	sys.exit(3)
 except Exception:
 	print "Test 3: Success"
 
+
 '''
 Test 4
 
 Test that querying a source that doesn't exist returns an error
 '''
+
 test4latch = latch.latch(1)
 test4pass = False
 
 def test4callback(query, message):
 	global test4pass
-
-	if message["type"] == "MESSAGE" and "errorType" in message["data"] and message["data"]["errorType"] == "ConnectorNotFoundException":
-		test4pass = True;
+	if message["type"] == "MESSAGE" and "errorType" in message["data"]:
+		if message["data"]["errorType"] == "ConnectorNotFoundException":
+			test4pass = True
+		else:
+			print "Unexpected error: %s" % message["data"]["errorType"]
 
 	if query.finished(): test4latch.countdown()
 
-client = importio.importio(host= "https://query." + host, userId=userguid, apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=api_key)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ str(uuid.uuid4()) ] }, test4callback)
 
@@ -81,7 +94,7 @@ test4latch.await()
 client.disconnect()
 
 if not test4pass:
-	print "Test 4: Failed (did not return an error message)"
+	print "Test 4: Failed (no/wrong error message)"
 	sys.exit(4)
 else:
 	print "Test 4: Success"
@@ -91,18 +104,21 @@ Test 5
 
 Test that querying a source that returns an error is handled correctly
 '''
+
 test5latch = latch.latch(1)
 test5pass = False
 
 def test5callback(query, message):
 	global test5pass
 
-	if message["type"] == "MESSAGE" and "errorType" in message["data"] and message["data"]["errorType"] == "UnauthorizedException":
-		test5pass = True;
-
+	if message["type"] == "MESSAGE" and "errorType" in message["data"]:
+		if message["data"]["errorType"] == "UnauthorizedException":
+			test5pass = True
+		else:
+			print "Unexpected error: %s" % message["data"]["errorType"]
 	if query.finished(): test5latch.countdown()
 
-client = importio.importio(host= "https://query." + host, userId=userguid, apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=api_key)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "eeba9430-bdf2-46c8-9dab-e1ca3c322339" ] }, test5callback)
 
@@ -110,12 +126,12 @@ test5latch.await()
 client.disconnect()
 
 if not test5pass:
-	print "Test 5: Failed (did not return an error message)"
+	print "Test 5: Failed (no/wrong error message)"
 	sys.exit(5)
 else:
 	print "Test 5: Success"
 
-# Set up the expected data for the next two tests
+# Set up the expected data for the query tests
 expectedData = [
 	"Iron Man",
 	"Captain America",
@@ -130,6 +146,7 @@ Test 6
 
 Tests querying a working source with user GUID and API key
 '''
+
 test6latch = latch.latch(1)
 test6data = []
 test6pass = True
@@ -143,7 +160,7 @@ def test6callback(query, message):
 
 	if query.finished(): test6latch.countdown()
 
-client = importio.importio(host= "https://query." + host, userId=userguid, apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=api_key)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test6callback)
 
@@ -166,6 +183,7 @@ Test 7
 
 Tests querying a working source with username and password
 '''
+
 test7latch = latch.latch(1)
 test7data = []
 test7pass = True
@@ -179,9 +197,8 @@ def test7callback(query, message):
 
 	if query.finished(): test7latch.countdown()
 
-client = importio.importio(host= "https://query." + host)
+client = importio.importio(host= "http://query." + host)
 client.login(username, password, host = "https://api." + host)
-client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test7callback)
 
 test7latch.await()
@@ -203,6 +220,7 @@ Test 8
 
 Tests querying a working source twice, with a client ID change in the middle
 '''
+
 test8latch = latch.latch(1)
 test8data = []
 test8pass = True
@@ -219,13 +237,17 @@ def test8callback(query, message):
 
 	if query.finished(): test8latch.countdown()
 
-client = importio.importio(host= "https://query." + host, userId=userguid, apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=api_key)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
 
 test8latch.await()
-client.clientId = "random"
+
+print "Modifying client_id of the library for testing purposes"
+
+client.session.client_id = "random"
 test8latch = latch.latch(1)
+
 # This query will fail
 try:
 	client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
@@ -233,6 +255,7 @@ try:
 	sys.exit(8)
 except:
 	pass
+
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
 test8latch.await()
 client.disconnect()
