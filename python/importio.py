@@ -76,19 +76,19 @@ class importio:
     The main import.io client interface
     '''
     
-    def __init__(self, host="https://query.import.io", proxies={}, userId=None, apiKey=None):
+    def __init__(self, host="https://query.import.io", proxies={}, user_id=None, api_key=None):
         '''
         Initialises the client library with its configuration
         '''
 
         self.host = host
         self.proxies = proxies
-        self.host = host
-        self.proxies = proxies
-        self.userId = userId
-        self.apiKey = apiKey
+        self.user_id = user_id
+        self.api_key = api_key
         self.session = None
         self.username = None
+        self.password = None
+        self.login_host = None
         self.queue = []
 
     def login(self, username, password, host="https://api.import.io"):
@@ -99,14 +99,14 @@ class importio:
         # Copy the configuration to the local state of the library
         self.username = username
         self.password = password
-        self.loginHost = host
+        self.login_host = host
 
         # If we don't have a session, then connect one
         if self.session is None:
             self.connect()
 
         # Once connected, do the login
-        self.session.login(self.username, self.password, self.loginHost)
+        self.session.login(self.username, self.password, self.login_host)
 
     def reconnect(self):
         '''
@@ -121,7 +121,7 @@ class importio:
     
         # Reconnect using username/password if required
         if self.username is not None:
-            self.login(self.username,self.password,self.loginHost)
+            self.login(self.username, self.password, self.login_host)
         else:
             self.connect()
 
@@ -138,7 +138,7 @@ class importio:
             return
 
         # Create a new session and connect it
-        self.session = session(self, self.host, self.proxies, self.userId, self.apiKey)
+        self.session = session(self, self.host, self.proxies, self.user_id, self.api_key)
         self.session.connect()
 
         # Make a copy of the pending query queue, and then empty it
@@ -180,23 +180,23 @@ class importio:
 
 class session:
     '''
-    Session manager, used for managing the message channel and sending queries and receiving data
+    Session manager, used for managing the message channel, sending queries and receiving data
     '''
     
-    def __init__(self, io, host, proxies, userId, apiKey):
+    def __init__(self, io, host, proxies, user_id, api_key):
         '''
         Initialises the session with its configuration
         '''
 
         self.io = io
         self.msgId = 1
-        self.clientId = None
+        self.client_id = None
         self.cookies = {}
         self.url = "%s/query/comet/" % host
         self.messagingChannel = u"/messaging"
         self.queries = {}
-        self.userId = userId
-        self.apiKey = apiKey
+        self.user_id = user_id
+        self.api_key = api_key
         self.queue = Queue.Queue()
         self.connected = False
         self.connecting = False
@@ -232,15 +232,15 @@ class session:
         self.msgId += 1
         
         # If we have a client ID, then we need to send that (will be provided on handshake)
-        if self.clientId is not None:
-            data["clientId"] = self.clientId
+        if self.client_id is not None:
+            data["clientId"] = self.client_id
             
         # Build the URL that we are going to request
         url = "%s%s" % (self.url, path)
         
         # If the user has chosen API key authentication, we need to send the API key with each request
-        if self.apiKey is not None:
-            url = "%s?&%s" % (url, urllib.urlencode({ "_user" : self.userId, "_apikey" : self.apiKey }) )
+        if self.api_key is not None:
+            url = "%s?&%s" % (url, urllib.urlencode({ "_user" : self.user_id, "_apikey" : self.api_key }) )
         
         # Build the request object we are going to use to initialise the request
         request = urllib2.Request(url)
@@ -254,11 +254,11 @@ class session:
         try:
             response = self.opener.open(request)
         except urllib2.HTTPError:
-            errorMessage = "Exception raised connecting to import.io for url %s" % url
+            error_message = "Exception raised connecting to import.io for url %s" % url
             if throw:
-                raise Exception(errorMessage)
+                raise Exception(error_message)
             else:
-                logger.warn(errorMessage)
+                logger.warn(error_message)
                 return
 
         # Don't process the response if we've disconnected in the meantime
@@ -267,11 +267,11 @@ class session:
 
         # If the server responds non-200 we have a serious issue (configuration wrong or server down)
         if response.code != 200 :
-            errorMessage = "Unable to connect to import.io, status %s for url %s" % (response.code, url)
+            error_message = "Unable to connect to import.io, status %s for url %s" % (response.code, url)
             if throw:
-                raise Exception(errorMessage)
+                raise Exception(error_message)
             else:
-                logger.warn(errorMessage)
+                logger.warn(error_message)
                 return
         
         # If the data comes back as gzip, we need to manually decode it
@@ -333,7 +333,7 @@ class session:
             return
 
         # Set the Client ID from the handshake's response
-        self.clientId = handshake.json[0]["clientId"]
+        self.client_id = handshake.json[0]["clientId"]
 
     def subscribe(self, channel):
         '''
@@ -403,7 +403,7 @@ class session:
         self.request("/meta/disconnect", throw=False)
 
         # Now we are disconnected we need to remove the client ID
-        self.clientId = None
+        self.client_id = None
         
         # We are done disconnecting so reset the flag
         self.disconnecting = False
@@ -445,7 +445,6 @@ class session:
             while self.connected:
                 # Use the request helper to make the connect call to the CometD endpoint
                 self.request("/meta/connect", path="connect", throw=False)
-
         finally:
             self.polling = False
 
@@ -456,20 +455,21 @@ class session:
         '''
         try:
             # First we need to look up which query object the message corresponds to, based on its request ID
-            reqId = data["requestId"]
+            request_id = data["requestId"]
 
             # If we don't recognise the client ID, then do not process the message
-            if not reqId in self.queries:
-                logger.warning("Unknown Client ID returned from server: %s" % reqId)
+            if not request_id in self.queries:
+                logger.warning("Unknown Client ID returned from server: %s" % request_id)
                 return
             
-            query = self.queries[reqId]
+            query = self.queries[request_id]
 
             # Call the message callback on the query object with the data
             query._onMessage(data)
 
             # Clean up the query map if the query itself is finished
-            if query.finished() and reqId in self.queries: del self.queries[reqId]
+            if query.finished() and request_id in self.queries:
+                del self.queries[request_id]
         except:
             logger.error("Error", exc_info=True)
         

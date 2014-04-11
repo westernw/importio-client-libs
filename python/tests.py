@@ -16,7 +16,7 @@ host = sys.argv[1]
 username = sys.argv[2]
 password = sys.argv[3]
 userguid = sys.argv[4]
-apikey = sys.argv[5]
+api_key = sys.argv[5]
 
 '''
 Test 1
@@ -41,7 +41,7 @@ Test 2
 Test that providing an incorrect user GUID raises an exception
 '''
 
-client = importio.importio(host= "http://query." + host, userId=str(uuid.uuid4()), apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=str(uuid.uuid4()), api_key=api_key)
 
 try:
 	client.connect()
@@ -57,7 +57,7 @@ Test 3
 Test that providing an incorrect API key raises an exception
 '''
 
-client = importio.importio(host= "http://query." + host, userId=userguid, apiKey=str(uuid.uuid4()))
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=str(uuid.uuid4()))
 
 try:
 	client.connect()
@@ -86,7 +86,7 @@ def test4callback(query, message):
 
 	if query.finished(): test4latch.countdown()
 
-client = importio.importio(host= "http://query." + host, userId=userguid, apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=api_key)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ str(uuid.uuid4()) ] }, test4callback)
 
@@ -118,7 +118,7 @@ def test5callback(query, message):
 			print "Unexpected error: %s" % message["data"]["errorType"]
 	if query.finished(): test5latch.countdown()
 
-client = importio.importio(host= "http://query." + host, userId=userguid, apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=api_key)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "eeba9430-bdf2-46c8-9dab-e1ca3c322339" ] }, test5callback)
 
@@ -160,7 +160,7 @@ def test6callback(query, message):
 
 	if query.finished(): test6latch.countdown()
 
-client = importio.importio(host= "http://query." + host, userId=userguid, apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=api_key)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test6callback)
 
@@ -237,15 +237,15 @@ def test8callback(query, message):
 
 	if query.finished(): test8latch.countdown()
 
-client = importio.importio(host= "http://query." + host, userId=userguid, apiKey=apikey)
+client = importio.importio(host= "http://query." + host, user_id=userguid, api_key=api_key)
 client.connect()
 client.query({ "input":{ "query": "server" }, "connectorGuids": [ "1ac5de1d-cf28-4e8a-b56f-3c42a24b1ef2" ] }, test8callback)
 
 test8latch.await()
 
-print "Modifying clientId of the library for testing purposes"
+print "Modifying client_id of the library for testing purposes"
 
-client.session.clientId = "random"
+client.session.client_id = "random"
 test8latch = latch.latch(1)
 
 # This query will fail
