@@ -41,8 +41,7 @@ public class IO8Test extends TestHelper {
 	@Test
 	public void test() {
 		TestLibrary client = new TestLibrary(UUID.fromString(userGuid), apiKey);
-		client.setApiHost("https://api." + host);
-		client.setQueryHost("https://query." + host);
+		client.setHost(host);
 		try {
 			client.connect();
 		} catch (IOException e) {

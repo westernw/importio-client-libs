@@ -36,8 +36,7 @@ public class IO6Test extends TestHelper {
 	@Test
 	public void test() {
 		ImportIO client = new ImportIO(UUID.fromString(userGuid), apiKey);
-		client.setApiHost("https://api." + host);
-		client.setQueryHost("https://query." + host);
+		client.setHost(host);
 		try {
 			client.connect();
 		} catch (IOException e) {

@@ -23,8 +23,7 @@ public class IO1Test extends TestHelper {
 	@Test
 	public void test() {
 		ImportIO client = new ImportIO();
-		client.setApiHost("https://api." + host);
-		client.setQueryHost("https://query." + host);
+		client.setHost(host);
 		try {
 			client.login(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 			// Should have thrown an IOException
