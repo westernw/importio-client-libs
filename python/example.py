@@ -30,10 +30,13 @@ logging.basicConfig(level=logging.INFO)
 # If you need it, you can get YOUR_USER_GUID and YOUR_API_KEY from your account page, at
 # http://import.io/data/account
 
-# To use an API key for authentication, use the following code:
-client = importio.importio(userId="YOUR_USER_GUID", apiKey="YOUR_API_KEY")
+# To use an API key for authentication, use the following code to initialise the library
+client = importio.importio(user_id="YOUR_USER_GUID", api_key="YOUR_API_KEY")
 # If you want to use the client library with API keys and proxies, use this command:
-#client = importio.importio(userId="YOUR_USER_GUID", apiKey="YOUR_API_KEY", proxies=proxies)
+#client = importio.importio(user_id="YOUR_USER_GUID", api_key="YOUR_API_KEY", proxies=proxies)
+
+# Once you have initialised the client, connect it to the server:
+client.connect()
 
 # If you wish to use username and password based authentication, first create a client:
 #client = importio.importio()
@@ -42,9 +45,6 @@ client = importio.importio(userId="YOUR_USER_GUID", apiKey="YOUR_API_KEY")
 
 # Next you need to log in to import.io using your username and password, like so:
 #client.login("YOUR_USERNAME", "YOUR_PASSWORD")
-
-# Once we have started the client and authenticated, we need to connect it to the server:
-client.connect()
 
 # Because import.io queries are asynchronous, for this simple script we will use a "latch"
 # to stop the script from exiting before all of our queries are returned

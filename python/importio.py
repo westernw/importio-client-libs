@@ -453,6 +453,7 @@ class session:
         This method is called by the queue poller to handle messages that are received from the import.io
         CometD server
         '''
+        
         try:
             # First we need to look up which query object the message corresponds to, based on its request ID
             request_id = data["requestId"]
@@ -468,7 +469,7 @@ class session:
             query._onMessage(data)
 
             # Clean up the query map if the query itself is finished
-            if query.finished():
+            if query.finished() and request_id in self.queries:
                 del self.queries[request_id]
         except:
             logger.error("Error", exc_info=True)
