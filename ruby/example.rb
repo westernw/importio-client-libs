@@ -20,11 +20,13 @@ require "json"
 
 # To use an API key for authentication, use the following code:
 client = Importio::new("YOUR_USER_GUID", "YOUR_API_KEY")
-
 # If you wish, you may configure HTTP proxies that ruby can use to connect
 # to import.io. If you need to do this, uncomment the following line and fill in the
 # correct details to specify an HTTP proxy:
 #client.proxy("127.0.0.1", 3128)
+# Once we have initialised the client, we need to connect it to the server:
+client.connect
+
 
 # If you wish to use username and password based authentication, first create a client:
 #client = Importio::new
@@ -33,9 +35,6 @@ client = Importio::new("YOUR_USER_GUID", "YOUR_API_KEY")
 #client.proxy("127.0.0.1", 3128)
 # Next you need to log in to import.io using your username and password, like so:
 #client.login("YOUR_USERNAME", "YOUR_PASSWORD")
-
-# Once we have started the client and authenticated, we need to connect it to the server:
-client.connect
 
 # Define here a global variable that we can put all our results in to when they come back from
 # the server, so we can use the data later on in the script
