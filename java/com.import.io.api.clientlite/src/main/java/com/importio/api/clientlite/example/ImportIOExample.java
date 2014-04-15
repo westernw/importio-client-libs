@@ -35,9 +35,10 @@ public class ImportIOExample {
 		 */
 		
 		/**
-		 * To use an API key for authentication, use the following code:
+		 * To use an API key for authentication, use the following code to initialise then connect the library
 		 */
 		ImportIO client = new ImportIO(UUID.fromString("YOUR_USER_GUID"), "YOUR_API_KEY");
+		client.connect();
 		
 		/**
 		 * If you wish to use username and password based authentication, first create a client:
@@ -47,11 +48,6 @@ public class ImportIOExample {
 		 * Next you need to log in to import.io using your username and password, like so:
 		 */
 		//client.login("YOUR_USERNAME", "YOUR_PASSWORD");
-		
-		/**
-		 * Once we have started the client and authenticated, we need to connect it to the server:
-		 */
-		client.connect();
 		
 		/**
 		 * Because import.io queries are asynchronous, for this simple script we will use a {@see CountdownLatch}

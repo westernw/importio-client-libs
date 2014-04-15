@@ -50,7 +50,7 @@ public class ImportIO {
 	String apiKey;
 	
 	/**
-	 * If we are using user/poass authentication, store them here for future sessions
+	 * If we are using user/pass authentication, store them here for future sessions
 	 */
 	String username;
 	String password;
@@ -96,8 +96,8 @@ public class ImportIO {
 	}
 	
 	/**
-	 * Authenticates the user with username and password on the import.io platform - note this is not
-	 * required if the client library is initialised with a user GUID and API key
+	 * If you want to use cookie-based authentication, this method will log you in with
+	 * a username and password to get a session
 	 * 
 	 * @param username
 	 * @param password
@@ -140,7 +140,7 @@ public class ImportIO {
 	}
 	
 	/**
-	 * Connect the client library to the import.io platform, if not already connected
+	 * Connect this client to the import.io server if not already connected
 	 * 
 	 * @throws IOException
 	 */
@@ -167,8 +167,9 @@ public class ImportIO {
 	}
 
 	/**
-	 * Disconnect the client from the import.io platform. This allows us to clean up resources on both the
-	 * client and the server
+	 * Call this method to ask the client library to disconnect from the import.io server
+	 * It is best practice to disconnect when you are finished with querying, so as to clean
+	 * up resources on both the client and server
 	 * 
 	 * @throws IOException
 	 */
