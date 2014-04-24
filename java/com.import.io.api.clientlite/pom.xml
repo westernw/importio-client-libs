@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.importio</groupId>
 	<artifactId>com.importio.api.clientlite</artifactId>
-	<version>2.0.0-SNAPSHOT</version>
+	<version>2.0.0</version>
 	<packaging>bundle</packaging>
 	<name>import.io lite client library</name>
 	<description>A client library for import.io that only depends on the JDK. Not suitable for very high concurrency.</description>
@@ -70,7 +70,7 @@
 				<artifactId>maven-release-plugin</artifactId>
 				<version>2.2.2</version>
 				<configuration>
-					<arguments>-Dgpg.passphrase=${gpg.passphrase}</arguments>
+					<arguments>-Dgpg.passphrase=${gpg.passphrase} -DskipTests</arguments>
 				</configuration>
 			</plugin>
 			<plugin>
