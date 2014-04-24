@@ -4,16 +4,23 @@ import com.importio.api.clientlite.data.Progress;
 import com.importio.api.clientlite.data.Query;
 import com.importio.api.clientlite.data.QueryMessage;
 
-
 /**
- * interface for handling messages from the Query API such as progress messages and returned results
- * @author dev
- *
+ * An interface for users to implement when they want to receive messages from import.io queries
+ * 
+ * @author dev@import.io
+ * @see https://github.com/import-io/importio-client-libs/tree/master/java
  */
 public interface MessageCallback {
 	
 	/**
-	 * this method is called when a message is received from a query
+	 * Called every time a message is received from the server
+	 * relating to the current query
+	 * 
+	 * @see ExecutingQuery.onMessage
+	 * 
+	 * @param query
+	 * @param message
+	 * @param progress
 	 */
 	void onMessage(Query query, QueryMessage message, Progress progress);
 }
