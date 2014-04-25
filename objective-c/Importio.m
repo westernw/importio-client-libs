@@ -113,7 +113,7 @@ NSMutableDictionary* queries;
     NSData* postData;
     
     if (data != nil) {
-        postData = [NSJSONSerialization dataWithJSONObject:data
+        postData = [NSJSONSerialization dataWithJSONObject:[NSArray arrayWithObjects: data, nil]
                                                    options:kNilOptions
                                                      error:nil];
     }
