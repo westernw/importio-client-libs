@@ -134,7 +134,12 @@ class Importio
     @session = Session::new(self, @host, @user_id, @api_key, @proxy_host, @proxy_port)
     @session.connect()
 
-    q = @queue.clone
+    # This should be a @queue.clone, but this errors in 2.1 branch of Ruby: #9718
+    # q = @queue.clone
+    q = Queue.new
+    until @queue.empty?
+      q.push(@queue.pop(true))
+    end
     @queue = Queue.new
 
     until q.empty?
