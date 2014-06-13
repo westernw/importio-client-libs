@@ -16,7 +16,9 @@ function execute() {
   var connectorGuid = "caff10dc-3bf8-402e-b1b8-c799a77c3e8c";
   // This is the input object, a map of input names to properties
   var input = {
-    "searchterm": "avengers"
+    "input": {
+      "searchterm": "avengers"
+    }
   }
   // Fill in your user GUID here, from https://import.io/data/account
   var userGuid = "YOUR_USER_GUID";
