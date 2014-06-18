@@ -5,3 +5,4 @@
 *.prefs
 surefire-reports
 maven-status
+ruby/*.gem
