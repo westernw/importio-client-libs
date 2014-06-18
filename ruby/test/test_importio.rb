@@ -9,7 +9,7 @@
 # @source: https://github.com/import-io/importio-client-libs/tree/master/python
 # 
 
-require "./importio.rb"
+require "./lib/importio.rb"
 require "securerandom"
 
 # Retrieve the credentials from the command line

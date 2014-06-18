@@ -9,7 +9,8 @@
 # @source: https://github.com/import-io/importio-client-libs/tree/master/python
 # 
 
-require "./importio.rb"
+require "./lib/importio.rb"
+#require "importio"
 require "json" 
 
 # You have two choices for authenticating with the Ruby client: you can use your API key
