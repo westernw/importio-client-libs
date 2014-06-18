@@ -253,7 +253,7 @@ class session:
         # Send the request itself
         try:
             response = self.opener.open(request)
-        except urllib2.HTTPError:
+        except:
             error_message = "Exception raised connecting to import.io for url %s" % url
             if throw:
                 raise Exception(error_message)
