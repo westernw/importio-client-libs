@@ -35,8 +35,8 @@ func main() {
 
   client := &http.Client{}
 
-  userguid := "6d05ddb1-f13d-43f5-a785-2e4314b79fe5"
-  apikey := "aRrae3FdmA/0UZ4sl1pVcVr3XQJJrgv/MM3XUQ0u6Px9vkuwOAoFNhpSDanVsOHRctQ73MYXIkJV+gSv9YWPtw=="
+  userguid := "YOUR_USER_GUID"
+  apikey := "YOUR_API_KEY"
 
   query(map[string]interface{}{
     "input": map[string]interface{}{
