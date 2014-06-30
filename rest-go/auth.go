@@ -26,13 +26,13 @@ func login(username string, password string, domain string, connectorGuid string
     },
   })
 
-  Url,_ := url.Parse("https://api.import.io/store/connector/" + connectorGuid + "/_query")
+  URL,_ := url.Parse("https://api.import.io/store/connector/" + connectorGuid + "/_query")
   parameters := url.Values{}
   parameters.Add("_user",userguid)
   parameters.Add("_apikey",apikey)
-  Url.RawQuery = parameters.Encode()
+  URL.RawQuery = parameters.Encode()
 
-  request, _ := http.NewRequest("POST", Url.String(), strings.NewReader(string(inputString)))
+  request, _ := http.NewRequest("POST", URL.String(), strings.NewReader(string(inputString)))
   request.Header.Add("Content-Type","application/json")
   resp,_ := client.Do(request)
 
@@ -48,13 +48,13 @@ func query(input map[string]interface{}, connectorGuid string, client *http.Clie
 
   inputString,_ := json.Marshal(input)
 
-  Url,_ := url.Parse("https://api.import.io/store/connector/" + connectorGuid + "/_query")
+  URL,_ := url.Parse("https://api.import.io/store/connector/" + connectorGuid + "/_query")
   parameters := url.Values{}
   parameters.Add("_user",userguid)
   parameters.Add("_apikey",apikey)
-  Url.RawQuery = parameters.Encode()
+  URL.RawQuery = parameters.Encode()
 
-  request, _ := http.NewRequest("POST", Url.String(), strings.NewReader(string(inputString)))
+  request, _ := http.NewRequest("POST", URL.String(), strings.NewReader(string(inputString)))
   request.Header.Add("Content-Type","application/json")
   resp,_ := client.Do(request)
 
