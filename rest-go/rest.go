@@ -1,3 +1,14 @@
+/*
+import.io REST API - example go code
+
+This file is an example for integrating with the import.io REST API using Go
+
+Dependencies: None outside standard library
+
+@author: dev@import.io
+@source: https://github.com/import-io/importio-client-libs/tree/master/rest-go
+*/
+
 package main
 
 import "fmt"
