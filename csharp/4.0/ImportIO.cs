@@ -125,7 +125,7 @@ namespace MinimalCometLibrary
 
             if (data != null)
             {
-                foreach (KeyValuePair<string, object> entry in data)
+                foreach (var entry in data)
                 {
                     dataPacket.Add(entry.Key, entry.Value);
                 }
