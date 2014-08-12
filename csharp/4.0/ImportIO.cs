@@ -23,11 +23,8 @@ namespace MinimalCometLibrary
         public bool isFinished { get { return finished; } set { finished = value; } }
         public QueryHandler queryCallback;
 
-        Dictionary<String, Object> queryInput;
-
-        public Query(Dictionary<String, Object> queryInput, QueryHandler queryCallback)
+        public Query(QueryHandler queryCallback)
         {
-            this.queryInput = queryInput;
             this.queryCallback = queryCallback;
         }
 
@@ -275,7 +272,7 @@ namespace MinimalCometLibrary
         public void DoQuery(Dictionary<String, Object> query, QueryHandler queryHandler)
         {
             Guid requestId = Guid.NewGuid();
-            queries.Add(requestId, new Query(query, queryHandler));
+            queries.Add(requestId, new Query(queryHandler));
             query.Add("requestId", requestId);
             Request("/service/query", new Dictionary<String, Object>() { { "data", query } });
         }
