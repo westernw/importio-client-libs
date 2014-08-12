@@ -61,9 +61,6 @@ namespace MinimalCometLibrary
 
     public class ImportIO
     {
-        private string host { get; set; }
-        private int port { get; set; }
-
         private Guid userGuid;
         private string apiKey;
 
