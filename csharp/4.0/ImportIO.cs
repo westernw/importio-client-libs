@@ -15,10 +15,10 @@ namespace MinimalCometLibrary
 
     public class Query
     {
-        private int jobsCompleted = 0;
-        private int jobsStarted = 0;
-        private int jobsSpawned = 0;
-        private bool finished = false;
+        private int jobsCompleted;
+        private int jobsStarted;
+        private int jobsSpawned;
+        private bool finished;
 
         public bool isFinished { get { return finished; } set { finished = value; } }
         public QueryHandler queryCallback;
@@ -73,7 +73,7 @@ namespace MinimalCometLibrary
         private static String messagingChannel = "/messaging";
         private String url;
 
-        private int msgId = 0;
+        private int msgId;
         private String clientId;
 
         private Boolean isConnected;
