@@ -160,7 +160,7 @@ namespace MinimalCometLibrary
                     {
                         var responseJson = responseStream.ReadToEnd();
                         var responseList = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(responseJson);
-                        foreach (Dictionary<string, object> responseDict in responseList)
+                        foreach (var responseDict in responseList)
                         {
                             if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
                             {
