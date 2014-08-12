@@ -20,14 +20,13 @@ namespace MinimalCometLibrary
         private int jobsCompleted;
         private int jobsStarted;
         private int jobsSpawned;
-        private bool finished;
-
-        public bool isFinished { get { return finished; } set { finished = value; } }
 
         public Query(QueryHandler queryCallback)
         {
             this.queryCallback = queryCallback;
         }
+
+        public bool IsFinished { get; private set; }
 
         public void OnMessage(Dictionary<string, object> data)
         {
@@ -49,11 +48,11 @@ namespace MinimalCometLibrary
                     break;
             }
 
-            finished = jobsStarted == jobsCompleted && jobsSpawned + 1 == jobsStarted && jobsStarted > 0;
+            IsFinished = jobsStarted == jobsCompleted && jobsSpawned + 1 == jobsStarted && jobsStarted > 0;
 
             if (messageType.Equals("ERROR") || messageType.Equals("UNAUTH") || messageType.Equals("CANCEL"))
             {
-                finished = true;
+                IsFinished = true;
             }
 
             queryCallback(this, data);
@@ -264,7 +263,7 @@ namespace MinimalCometLibrary
             Query query = queries[requestId];
 
             query.OnMessage(data);
-            if (query.isFinished)
+            if (query.IsFinished)
             {
                 queries.Remove(requestId);
             }

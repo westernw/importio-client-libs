@@ -53,7 +53,7 @@ namespace MinimalCometLibrary
                 Console.WriteLine(JsonConvert.SerializeObject(message["data"]));
             }
 
-            if (query.isFinished) countdownLatch.Signal();
+            if (query.IsFinished) countdownLatch.Signal();
         }
     }
 }
