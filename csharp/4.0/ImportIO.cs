@@ -11,13 +11,13 @@ using System.Collections.Concurrent;
 
 namespace MinimalCometLibrary
 {
-    delegate void QueryHandler(Query query, Dictionary<String, Object> data);
+    public delegate void QueryHandler(Query query, Dictionary<String, Object> data);
 
-    class Query
+    public class Query
     {
-        int jobsCompleted = 0;
-        int jobsStarted = 0;
-        int jobsSpawned = 0;
+        private int jobsCompleted = 0;
+        private int jobsStarted = 0;
+        private int jobsSpawned = 0;
         private bool finished = false;
 
         public bool isFinished { get { return finished; } set { finished = value; } }
@@ -60,10 +60,9 @@ namespace MinimalCometLibrary
 
             queryCallback(this, data);
         }
-
     }
 
-    class ImportIO
+    public class ImportIO
     {
         private String host { get; set; }
         private int port { get; set; }
@@ -79,9 +78,9 @@ namespace MinimalCometLibrary
 
         private Boolean isConnected;
 
-        CookieContainer cookieContainer = new CookieContainer();
+        private CookieContainer cookieContainer = new CookieContainer();
 
-        Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
+        private Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
 
         private BlockingCollection<Dictionary<String, Object>> messageQueue = new BlockingCollection<Dictionary<string,object>>();
 
@@ -280,7 +279,5 @@ namespace MinimalCometLibrary
             query.Add("requestId", requestId);
             Request("/service/query", new Dictionary<String, Object>() { { "data", query } });
         }
-
-
     }
 }
