@@ -17,20 +17,20 @@ namespace MinimalCometLibrary
             //ImportIO io = new ImportIO("http://api.import.io",Guid.parse("d08d14f3-6c98-44af-a301-f8d4288ecce3"),"tMFNJzaaLe8sgYF9hFNhKI7akyiPLMhfu8U2omNVCVr5hqWWLyiQMApDDyUucQKF++BAoVi6jnGnavYqRKP/9g==");
             
             // If using a username and password
-            ImportIO io = new ImportIO();
+            var io = new ImportIO();
             io.Login("xxx", "xxx");
             
 
             io.Connect();
-            Dictionary<string, object> query1 = new Dictionary<string,object>();
+            var query1 = new Dictionary<string,object>();
             query1.Add("input",new Dictionary<string, string>() {{ "query","mac mini" }});
             query1.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
-            Dictionary<string, object> query2 = new Dictionary<string, object>();
+            var query2 = new Dictionary<string, object>();
             query2.Add("input", new Dictionary<string, string>() { { "query", "ubuntu" } });
             query2.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
-            Dictionary<string, object> query3 = new Dictionary<string, object>();
+            var query3 = new Dictionary<string, object>();
             query3.Add("input", new Dictionary<string, string>() { { "query", "ibm" } });
             query3.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
