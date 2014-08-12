@@ -225,7 +225,7 @@ namespace MinimalCometLibrary
 
         public void Disconnect()
         {
-            Request("/meta/disconnect", null, "", true);
+            Request("/meta/disconnect");
             isConnected = false;
         }
 
