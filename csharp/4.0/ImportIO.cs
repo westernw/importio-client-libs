@@ -79,7 +79,7 @@ namespace MinimalCometLibrary
             this.userGuid = userGuid;
             this.apiKey = apiKey;
 
-            this.url = host + "/query/comet/";
+            url = host + "/query/comet/";
             clientId = null;
         }
 
