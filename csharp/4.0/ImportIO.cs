@@ -119,7 +119,9 @@ namespace MinimalCometLibrary
                              };
 
             if (clientId != null)
+            {
                 dataPacket.Add("clientId", clientId);
+            }
 
             if (data != null)
             {
@@ -163,16 +165,20 @@ namespace MinimalCometLibrary
                             if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
                             {
                                 if (doThrow)
+                                {
                                     throw new Exception("Unsucessful request");
+                                }
                             }
 
-                            if (!responseDict["channel"].Equals(MessagingChannel)) continue;
+                            if (!responseDict["channel"].Equals(MessagingChannel))
+                            {
+                                continue;
+                            }
 
                             if (responseDict.ContainsKey("data"))
                             {
                                 messageQueue.Add(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<string, object>>());
                             }
-
                         }
 
                         return responseList;
@@ -181,6 +187,7 @@ namespace MinimalCometLibrary
                 catch (Exception e)
                 {
                     Console.WriteLine("Error occurred {0}", e.Message);
+
                     return new List<Dictionary<string, object>>();
                 }
                 
@@ -200,8 +207,9 @@ namespace MinimalCometLibrary
 
         public void Connect()
         {
-            if(isConnected) {
-                return ;
+            if (isConnected)
+            {
+                return;
             }
             
             Handshake();
