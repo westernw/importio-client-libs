@@ -149,7 +149,7 @@ namespace MinimalCometLibrary
 
             using (var dataStream = request.GetRequestStream())
             {
-                dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
+                dataStream.Write(Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
                 try
                 {
                     var response = (HttpWebResponse)request.GetResponse();
