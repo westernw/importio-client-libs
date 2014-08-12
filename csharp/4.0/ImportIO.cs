@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Net;
 using System.IO;
 using System.Web;
-using System.Net;
 
 // Download the Newtonsoft JSON library here http://james.newtonking.com/projects/json-net.aspx
 using Newtonsoft.Json;
