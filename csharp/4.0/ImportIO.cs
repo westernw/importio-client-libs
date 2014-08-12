@@ -223,6 +223,14 @@ namespace MinimalCometLibrary
             new Thread(PollQueue).Start();
         }
 
+        public void DoQuery(Dictionary<string, object> query, QueryHandler queryHandler)
+        {
+            var requestId = Guid.NewGuid();
+            queries.Add(requestId, new Query(queryHandler));
+            query.Add("requestId", requestId);
+            Request("/service/query", new Dictionary<string, object> { { "data", query } });
+        }
+
         public void Disconnect()
         {
             Request("/meta/disconnect");
@@ -255,14 +263,6 @@ namespace MinimalCometLibrary
             {
                 queries.Remove(requestId);
             }
-        }
-
-        public void DoQuery(Dictionary<string, object> query, QueryHandler queryHandler)
-        {
-            var requestId = Guid.NewGuid();
-            queries.Add(requestId, new Query(queryHandler));
-            query.Add("requestId", requestId);
-            Request("/service/query", new Dictionary<string, object> { { "data", query } });
         }
     }
 }
