@@ -22,17 +22,17 @@ namespace MinimalCometLibrary
             
 
             io.Connect();
-            Dictionary<String,Object> query1 = new Dictionary<string,object>();
-            query1.Add("input",new Dictionary<String,String>() {{ "query","mac mini" }});
-            query1.Add("connectorGuids", new List<String>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
+            Dictionary<string, object> query1 = new Dictionary<string,object>();
+            query1.Add("input",new Dictionary<string, string>() {{ "query","mac mini" }});
+            query1.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
-            Dictionary<String, Object> query2 = new Dictionary<string, object>();
-            query2.Add("input", new Dictionary<String, String>() { { "query", "ubuntu" } });
-            query2.Add("connectorGuids", new List<String>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
+            Dictionary<string, object> query2 = new Dictionary<string, object>();
+            query2.Add("input", new Dictionary<string, string>() { { "query", "ubuntu" } });
+            query2.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
-            Dictionary<String, Object> query3 = new Dictionary<string, object>();
-            query3.Add("input", new Dictionary<String, String>() { { "query", "ibm" } });
-            query3.Add("connectorGuids", new List<String>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
+            Dictionary<string, object> query3 = new Dictionary<string, object>();
+            query3.Add("input", new Dictionary<string, string>() { { "query", "ibm" } });
+            query3.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
             countdownLatch = new CountdownEvent(3);
 
@@ -45,7 +45,7 @@ namespace MinimalCometLibrary
             io.Disconnect();
         }
 
-        private static void HandleQuery(Query query, Dictionary<String,Object> message)
+        private static void HandleQuery(Query query, Dictionary<string, object> message)
         {
             if(message["type"].Equals("MESSAGE"))
             {
