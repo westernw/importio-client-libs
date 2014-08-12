@@ -111,10 +111,12 @@ namespace MinimalCometLibrary
 
         public List<Dictionary<string, object>> Request(string channel, Dictionary<string, object> data = null, string path = "", bool doThrow = true)
         {
-            var dataPacket = new Dictionary<string, object>();
-            dataPacket.Add("channel", channel);
-            dataPacket.Add("connectionType", "long-polling");
-            dataPacket.Add("id", (msgId++).ToString());
+            var dataPacket = new Dictionary<string, object>
+                             {
+                                 { "channel", channel },
+                                 { "connectionType", "long-polling" },
+                                 { "id", (msgId++).ToString() }
+                             };
 
             if (this.clientId != null)
                 dataPacket.Add("clientId", this.clientId);
@@ -204,8 +206,7 @@ namespace MinimalCometLibrary
             
             Handshake();
 
-            var subscribeData = new Dictionary<string, object>();
-            subscribeData.Add("subscription", MessagingChannel);
+            var subscribeData = new Dictionary<string, object> { { "subscription", MessagingChannel } };
             Request("/meta/subscribe", subscribeData);
 
             isConnected = true;
