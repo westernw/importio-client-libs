@@ -107,21 +107,19 @@ namespace MinimalCometLibrary
                 {
                     throw new Exception("Could not log in, code:" + loginResponse.StatusCode);
                 }
-                else
+
+                foreach (Cookie cookie in loginResponse.Cookies)
                 {
-                    foreach (Cookie cookie in loginResponse.Cookies)
+                    if (cookie.Name.Equals("AUTH"))
                     {
-                        if (cookie.Name.Equals("AUTH"))
-                        {
-                            // Login was successful
-                            Console.WriteLine("Login Successful");
-                        }
+                        // Login was successful
+                        Console.WriteLine("Login Successful");
                     }
                 }
             }
         }
 
-        public List<Dictionary<string, object>> Request(String channel, Dictionary<string, object> data = null, string path = "", bool doThrow = true)
+        public List<Dictionary<string, object>> Request(string channel, Dictionary<string, object> data = null, string path = "", bool doThrow = true)
         {
             var dataPacket = new Dictionary<string, object>();
             dataPacket.Add("channel", channel);
