@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.IO;
+using System.Text;
 using System.Web;
 
 // Download the Newtonsoft JSON library here http://james.newtonking.com/projects/json-net.aspx
@@ -98,7 +99,7 @@ namespace MinimalCometLibrary
 
             using (var dataStream = loginRequest.GetRequestStream())
             {
-                dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(loginParams), 0, loginParams.Length);
+                dataStream.Write(Encoding.UTF8.GetBytes(loginParams), 0, loginParams.Length);
 
                 var loginResponse = (HttpWebResponse)loginRequest.GetResponse();
 
