@@ -64,7 +64,7 @@ namespace MinimalCometLibrary
         private Guid userGuid;
         private string apiKey;
 
-        private static string messagingChannel = "/messaging";
+        private const string MessagingChannel = "/messaging";
         private string url;
 
         private int msgId;
@@ -179,7 +179,7 @@ namespace MinimalCometLibrary
                                     throw new Exception("Unsucessful request");
                             }
 
-                            if (!responseDict["channel"].Equals(messagingChannel)) continue;
+                            if (!responseDict["channel"].Equals(MessagingChannel)) continue;
 
                             if (responseDict.ContainsKey("data"))
                             {
@@ -220,7 +220,7 @@ namespace MinimalCometLibrary
             Handshake();
 
             var subscribeData = new Dictionary<string, object>();
-            subscribeData.Add("subscription", messagingChannel);
+            subscribeData.Add("subscription", MessagingChannel);
             Request("/meta/subscribe", subscribeData);
 
             isConnected = true;
