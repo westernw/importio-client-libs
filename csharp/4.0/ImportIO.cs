@@ -61,20 +61,18 @@ namespace MinimalCometLibrary
 
     public class ImportIO
     {
-        private Guid userGuid;
-        private string apiKey;
-
         private const string MessagingChannel = "/messaging";
-        private string url;
 
-        private int msgId;
-        private string clientId;
-
-        private bool isConnected;
-
+        private readonly string apiKey;
+        private readonly string url;
         private readonly CookieContainer cookieContainer = new CookieContainer();
         private readonly Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
         private readonly BlockingCollection<Dictionary<string, object>> messageQueue = new BlockingCollection<Dictionary<string, object>>();
+
+        private Guid userGuid;
+        private int msgId;
+        private string clientId;
+        private bool isConnected;
 
         public ImportIO(string host = "http://query.import.io", Guid userGuid = default(Guid), string apiKey = null)
         {
