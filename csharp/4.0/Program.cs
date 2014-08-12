@@ -23,16 +23,16 @@ namespace MinimalCometLibrary
 
             io.Connect();
             var query1 = new Dictionary<string,object>();
-            query1.Add("input",new Dictionary<string, string>() {{ "query","mac mini" }});
-            query1.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
+            query1.Add("input",new Dictionary<string, string> { { "query", "mac mini" } });
+            query1.Add("connectorGuids", new List<string> { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
             var query2 = new Dictionary<string, object>();
-            query2.Add("input", new Dictionary<string, string>() { { "query", "ubuntu" } });
-            query2.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
+            query2.Add("input", new Dictionary<string, string> { { "query", "ubuntu" } });
+            query2.Add("connectorGuids", new List<string> { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
             var query3 = new Dictionary<string, object>();
-            query3.Add("input", new Dictionary<string, string>() { { "query", "ibm" } });
-            query3.Add("connectorGuids", new List<string>() { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
+            query3.Add("input", new Dictionary<string, string> { { "query", "ibm" } });
+            query3.Add("connectorGuids", new List<string> { "39df3fe4-c716-478b-9b80-bdbee43bfbde" });
 
             countdownLatch = new CountdownEvent(3);
 
