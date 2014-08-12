@@ -72,11 +72,9 @@ namespace MinimalCometLibrary
 
         private bool isConnected;
 
-        private CookieContainer cookieContainer = new CookieContainer();
-
-        private Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
-
-        private BlockingCollection<Dictionary<string, object>> messageQueue = new BlockingCollection<Dictionary<string, object>>();
+        private readonly CookieContainer cookieContainer = new CookieContainer();
+        private readonly Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
+        private readonly BlockingCollection<Dictionary<string, object>> messageQueue = new BlockingCollection<Dictionary<string, object>>();
 
         public ImportIO(string host = "http://query.import.io", Guid userGuid = default(Guid), string apiKey = null)
         {
