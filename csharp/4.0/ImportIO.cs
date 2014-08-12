@@ -143,7 +143,7 @@ namespace MinimalCometLibrary
             request.Method = "POST";
             request.ContentType = "application/json;charset=UTF-8";
             request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip");
-            var dataJson = JsonConvert.SerializeObject(new List<object>() { dataPacket });
+            var dataJson = JsonConvert.SerializeObject(new List<object> { dataPacket });
 
             request.ContentLength = dataJson.Length;
 
@@ -200,7 +200,7 @@ namespace MinimalCometLibrary
             handshakeData.Add("version", "1.0");
             handshakeData.Add("minimumVersion", "0.9");
             handshakeData.Add("supportedConnectionTypes", new List<string> { "long-polling" });
-            handshakeData.Add("advice", new Dictionary<string, int>() { { "timeout", 60000 }, { "interval", 0 } });
+            handshakeData.Add("advice", new Dictionary<string, int> { { "timeout", 60000 }, { "interval", 0 } });
             var responseList = Request("/meta/handshake", handshakeData, "handshake");
             clientId = (string)responseList[0]["clientId"];
         }
@@ -263,7 +263,7 @@ namespace MinimalCometLibrary
             var requestId = Guid.NewGuid();
             queries.Add(requestId, new Query(queryHandler));
             query.Add("requestId", requestId);
-            Request("/service/query", new Dictionary<string, object>() { { "data", query } });
+            Request("/service/query", new Dictionary<string, object> { { "data", query } });
         }
     }
 }
