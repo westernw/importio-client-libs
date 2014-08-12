@@ -118,8 +118,8 @@ namespace MinimalCometLibrary
                                  { "id", (msgId++).ToString() }
                              };
 
-            if (this.clientId != null)
-                dataPacket.Add("clientId", this.clientId);
+            if (clientId != null)
+                dataPacket.Add("clientId", clientId);
 
             if (data != null)
             {
