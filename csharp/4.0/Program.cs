@@ -47,7 +47,7 @@ namespace MinimalCometLibrary
 
         private static void HandleQuery(Query query, Dictionary<string, object> message)
         {
-            if(message["type"].Equals("MESSAGE"))
+            if (message["type"].Equals("MESSAGE"))
             {
                 Console.WriteLine("Got data!");
                 Console.WriteLine(JsonConvert.SerializeObject(message["data"]));
