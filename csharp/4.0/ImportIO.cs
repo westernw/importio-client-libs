@@ -218,9 +218,9 @@ namespace MinimalCometLibrary
 
             isConnected = true;
 
-            new Thread(new ThreadStart(Poll)).Start();
+            new Thread(Poll).Start();
 
-            new Thread(new ThreadStart(PollQueue)).Start();
+            new Thread(PollQueue).Start();
         }
 
         public void Disconnect()
