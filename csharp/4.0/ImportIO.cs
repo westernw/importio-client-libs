@@ -109,7 +109,51 @@ namespace MinimalCometLibrary
             }
         }
 
-        public List<Dictionary<string, object>> Request(string channel, Dictionary<string, object> data = null, string path = "", bool doThrow = true)
+        public void Connect()
+        {
+            if (isConnected)
+            {
+                return;
+            }
+            
+            Handshake();
+
+            var subscribeData = new Dictionary<string, object> { { "subscription", MessagingChannel } };
+            Request("/meta/subscribe", subscribeData);
+
+            isConnected = true;
+
+            new Thread(Poll).Start();
+
+            new Thread(PollQueue).Start();
+        }
+
+        public void DoQuery(Dictionary<string, object> query, QueryHandler queryHandler)
+        {
+            var requestId = Guid.NewGuid();
+            queries.Add(requestId, new Query(queryHandler));
+            query.Add("requestId", requestId);
+            Request("/service/query", new Dictionary<string, object> { { "data", query } });
+        }
+
+        public void Disconnect()
+        {
+            Request("/meta/disconnect");
+            isConnected = false;
+        }
+
+        private void Handshake()
+        {
+            var handshakeData = new Dictionary<string, object>();
+            handshakeData.Add("version", "1.0");
+            handshakeData.Add("minimumVersion", "0.9");
+            handshakeData.Add("supportedConnectionTypes", new List<string> { "long-polling" });
+            handshakeData.Add("advice", new Dictionary<string, int> { { "timeout", 60000 }, { "interval", 0 } });
+            var responseList = Request("/meta/handshake", handshakeData, "handshake");
+            clientId = (string)responseList[0]["clientId"];
+        }
+
+        private List<Dictionary<string, object>> Request(string channel, Dictionary<string, object> data = null, string path = "", bool doThrow = true)
         {
             var dataPacket = new Dictionary<string, object>
                              {
@@ -191,50 +235,6 @@ namespace MinimalCometLibrary
                     return new List<Dictionary<string, object>>();
                 }
             }
-        }
-
-        public void Handshake()
-        {
-            var handshakeData = new Dictionary<string, object>();
-            handshakeData.Add("version", "1.0");
-            handshakeData.Add("minimumVersion", "0.9");
-            handshakeData.Add("supportedConnectionTypes", new List<string> { "long-polling" });
-            handshakeData.Add("advice", new Dictionary<string, int> { { "timeout", 60000 }, { "interval", 0 } });
-            var responseList = Request("/meta/handshake", handshakeData, "handshake");
-            clientId = (string)responseList[0]["clientId"];
-        }
-
-        public void Connect()
-        {
-            if (isConnected)
-            {
-                return;
-            }
-            
-            Handshake();
-
-            var subscribeData = new Dictionary<string, object> { { "subscription", MessagingChannel } };
-            Request("/meta/subscribe", subscribeData);
-
-            isConnected = true;
-
-            new Thread(Poll).Start();
-
-            new Thread(PollQueue).Start();
-        }
-
-        public void DoQuery(Dictionary<string, object> query, QueryHandler queryHandler)
-        {
-            var requestId = Guid.NewGuid();
-            queries.Add(requestId, new Query(queryHandler));
-            query.Add("requestId", requestId);
-            Request("/service/query", new Dictionary<string, object> { { "data", query } });
-        }
-
-        public void Disconnect()
-        {
-            Request("/meta/disconnect");
-            isConnected = false;
         }
 
         private void Poll()
