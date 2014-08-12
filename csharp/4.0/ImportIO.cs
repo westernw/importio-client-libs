@@ -86,7 +86,6 @@ namespace MinimalCometLibrary
 
         public void Login(string username, string password, string host = "http://api.import.io")
         {
-            Console.WriteLine("Logging in");
             var loginParams = "username=" + HttpUtility.UrlEncode(username) + "&password=" + HttpUtility.UrlEncode(password);
             var searchUrl = host + "/auth/login";
             var loginRequest = (HttpWebRequest)WebRequest.Create(searchUrl);
@@ -106,15 +105,6 @@ namespace MinimalCometLibrary
                 if (loginResponse.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception("Could not log in, code:" + loginResponse.StatusCode);
-                }
-
-                foreach (Cookie cookie in loginResponse.Cookies)
-                {
-                    if (cookie.Name.Equals("AUTH"))
-                    {
-                        // Login was successful
-                        Console.WriteLine("Login Successful");
-                    }
                 }
             }
         }
