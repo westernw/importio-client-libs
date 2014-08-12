@@ -184,13 +184,12 @@ namespace MinimalCometLibrary
                         return responseList;
                     }
                 }
-                catch (Exception e)
+                catch (Exception exception)
                 {
-                    Console.WriteLine("Error occurred {0}", e.Message);
+                    Console.WriteLine("Error occurred {0}", exception.Message);
 
                     return new List<Dictionary<string, object>>();
                 }
-                
             }
         }
 
