@@ -15,13 +15,14 @@ namespace MinimalCometLibrary
 
     public class Query
     {
+        private readonly QueryHandler queryCallback;
+
         private int jobsCompleted;
         private int jobsStarted;
         private int jobsSpawned;
         private bool finished;
 
         public bool isFinished { get { return finished; } set { finished = value; } }
-        public QueryHandler queryCallback;
 
         public Query(QueryHandler queryCallback)
         {
