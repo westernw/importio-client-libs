@@ -131,14 +131,14 @@ namespace MinimalCometLibrary
                 }
             }
 
-            string url = this.url + path;
+            var requestUrl = url + path;
 
             if (apiKey != null)
             {
-                url += "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey=" + HttpUtility.UrlEncode(apiKey);
+                requestUrl += "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey=" + HttpUtility.UrlEncode(apiKey);
             }
 
-            var request = (HttpWebRequest)WebRequest.Create(url);
+            var request = (HttpWebRequest)WebRequest.Create(requestUrl);
             request.AutomaticDecompression = DecompressionMethods.GZip;
             request.Method = "POST";
             request.ContentType = "application/json;charset=UTF-8";
