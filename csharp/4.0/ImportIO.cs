@@ -185,18 +185,7 @@ namespace MinimalCometLibrary
 
             var dataJson = JsonConvert.SerializeObject(new List<object> { dataPacket });
 
-            var request = (HttpWebRequest)WebRequest.Create(requestUrl);
-            request.AutomaticDecompression = DecompressionMethods.GZip;
-            request.Method = "POST";
-            request.ContentType = "application/json;charset=UTF-8";
-            request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip");
-            request.ContentLength = dataJson.Length;
-            request.CookieContainer = cookieContainer;
-
-            using (var dataStream = request.GetRequestStream())
-            {
-                dataStream.Write(Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
-            }
+            var request = BuildWebRequest(requestUrl, dataJson);
 
             try
             {
@@ -238,6 +227,24 @@ namespace MinimalCometLibrary
 
                 return new List<Dictionary<string, object>>();
             }
+        }
+
+        private HttpWebRequest BuildWebRequest(string requestUrl, string dataJson)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(requestUrl);
+            request.AutomaticDecompression = DecompressionMethods.GZip;
+            request.Method = "POST";
+            request.ContentType = "application/json;charset=UTF-8";
+            request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip");
+            request.ContentLength = dataJson.Length;
+            request.CookieContainer = cookieContainer;
+
+            using (var dataStream = request.GetRequestStream())
+            {
+                dataStream.Write(Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
+            }
+
+            return request;
         }
 
         private string AppendApiKey(string requestUrl)
