@@ -183,58 +183,60 @@ namespace MinimalCometLibrary
 
             requestUrl = AppendApiKey(requestUrl);
 
+            var dataJson = JsonConvert.SerializeObject(new List<object> { dataPacket });
+
             var request = (HttpWebRequest)WebRequest.Create(requestUrl);
             request.AutomaticDecompression = DecompressionMethods.GZip;
             request.Method = "POST";
             request.ContentType = "application/json;charset=UTF-8";
             request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip");
-            var dataJson = JsonConvert.SerializeObject(new List<object> { dataPacket });
-
             request.ContentLength = dataJson.Length;
-
             request.CookieContainer = cookieContainer;
 
             using (var dataStream = request.GetRequestStream())
             {
                 dataStream.Write(Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
-                try
+            }
+
+            try
+            {
+                var response = (HttpWebResponse)request.GetResponse();
+
+                using (var responseStream = new StreamReader(response.GetResponseStream()))
                 {
-                    var response = (HttpWebResponse)request.GetResponse();
-
-                    using (var responseStream = new StreamReader(response.GetResponseStream()))
+                    var responseJson = responseStream.ReadToEnd();
+                    var responseList = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(responseJson);
+                    foreach (var responseDict in responseList)
                     {
-                        var responseJson = responseStream.ReadToEnd();
-                        var responseList = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(responseJson);
-                        foreach (var responseDict in responseList)
+                        if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
                         {
-                            if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
+                            if (doThrow)
                             {
-                                if (doThrow)
-                                {
-                                    throw new Exception("Unsucessful request");
-                                }
-                            }
-
-                            if (!responseDict["channel"].Equals(MessagingChannel))
-                            {
-                                continue;
-                            }
-
-                            if (responseDict.ContainsKey("data"))
-                            {
-                                messageQueue.Add(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<string, object>>());
+                                throw new Exception("Unsucessful request");
                             }
                         }
 
-                        return responseList;
-                    }
-                }
-                catch (Exception exception)
-                {
-                    Console.WriteLine("Error occurred {0}", exception.Message);
+                        if (!responseDict["channel"].Equals(MessagingChannel))
+                        {
+                            continue;
+                        }
 
-                    return new List<Dictionary<string, object>>();
+                        if (responseDict.ContainsKey("data"))
+                        {
+                            messageQueue.Add(
+                                ((Newtonsoft.Json.Linq.JObject)responseDict["data"])
+                                    .ToObject<Dictionary<string, object>>());
+                        }
+                    }
+
+                    return responseList;
                 }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error occurred {0}", exception.Message);
+
+                return new List<Dictionary<string, object>>();
             }
         }
 
