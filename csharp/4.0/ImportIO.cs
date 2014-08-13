@@ -153,7 +153,11 @@ namespace MinimalCometLibrary
             clientId = (string)responseList[0]["clientId"];
         }
 
-        private List<Dictionary<string, object>> Request(string channel, Dictionary<string, object> data = null, string path = "", bool doThrow = true)
+        private List<Dictionary<string, object>> Request(
+            string channel,
+            Dictionary<string, object> data = null,
+            string path = "",
+            bool doThrow = true)
         {
             var dataPacket = new Dictionary<string, object>
                              {
