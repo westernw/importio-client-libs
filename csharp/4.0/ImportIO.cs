@@ -75,7 +75,7 @@ namespace MinimalCometLibrary
         private string clientId;
         private bool isConnected;
 
-        public ImportIO(string host = "http://query.import.io", Guid userGuid = default(Guid), string apiKey = null)
+        public ImportIO(string host = "https://query.import.io", Guid userGuid = default(Guid), string apiKey = null)
         {
             this.userGuid = userGuid;
             this.apiKey = apiKey;
@@ -84,7 +84,7 @@ namespace MinimalCometLibrary
             clientId = null;
         }
 
-        public void Login(string username, string password, string host = "http://api.import.io")
+        public void Login(string username, string password, string host = "https://api.import.io")
         {
             var loginParams = "username=" + HttpUtility.UrlEncode(username) + "&password=" + HttpUtility.UrlEncode(password);
             var searchUrl = host + "/auth/login";
