@@ -181,10 +181,7 @@ namespace MinimalCometLibrary
 
             var requestUrl = url + path;
 
-            if (apiKey != null)
-            {
-                requestUrl += "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey=" + HttpUtility.UrlEncode(apiKey);
-            }
+            requestUrl = AppendApiKey(requestUrl);
 
             var request = (HttpWebRequest)WebRequest.Create(requestUrl);
             request.AutomaticDecompression = DecompressionMethods.GZip;
@@ -239,6 +236,17 @@ namespace MinimalCometLibrary
                     return new List<Dictionary<string, object>>();
                 }
             }
+        }
+
+        private string AppendApiKey(string requestUrl)
+        {
+            if (apiKey != null)
+            {
+                requestUrl += "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey="
+                              + HttpUtility.UrlEncode(apiKey);
+            }
+
+            return requestUrl;
         }
 
         private void Poll()
