@@ -128,6 +128,49 @@ namespace MinimalCometLibrary
             new Thread(PollQueue).Start();
         }
 
+        public List<string> AuthenticateConnector(string connectorGuid, string connectorAuthDomain, string domainUsername, string domainPassword)
+        {
+            var requestUrl = string.Format("https://api.import.io/store/connector/{0}/_query", connectorGuid);
+            requestUrl = AppendApiKey(requestUrl);
+
+            var data = new Dictionary<string, object>
+            {
+                { "loginOnly", true },
+                { "additionalInput", new Dictionary<string, object>
+                    {
+                        { connectorGuid, new Dictionary<string, object>
+                            {
+                                { "domainCredentials", new Dictionary<string, object>
+                                    {
+                                        { connectorAuthDomain, new Dictionary<string, object>
+                                            {
+                                                { "username", domainUsername },
+                                                { "password", domainPassword }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var dataJson = JsonConvert.SerializeObject(data);
+            var request = BuildWebRequest(requestUrl, dataJson);
+
+            using (var response = (HttpWebResponse)request.GetResponse())
+            {
+                using (var responseStream = new StreamReader(response.GetResponseStream()))
+                {
+                    var responseJson = responseStream.ReadToEnd();
+                    var responseList = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseJson);
+
+                    return JsonConvert.DeserializeObject<List<string>>(responseList["cookies"].ToString());
+                }
+            }
+        }
+
         public void DoQuery(Dictionary<string, object> query, QueryHandler queryHandler)
         {
             var requestId = Guid.NewGuid();
