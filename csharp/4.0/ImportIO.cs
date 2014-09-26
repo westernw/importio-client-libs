@@ -244,7 +244,7 @@ namespace MinimalCometLibrary
                         {
                             if (doThrow)
                             {
-                                throw new Exception("Unsucessful request");
+                                throw new Exception("Unsuccessful request");
                             }
                         }
 
