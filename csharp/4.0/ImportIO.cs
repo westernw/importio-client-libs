@@ -87,8 +87,8 @@ namespace MinimalCometLibrary
         public void Login(string username, string password, string host = "https://api.import.io")
         {
             var loginParams = "username=" + HttpUtility.UrlEncode(username) + "&password=" + HttpUtility.UrlEncode(password);
-            var searchUrl = host + "/auth/login";
-            var loginRequest = (HttpWebRequest)WebRequest.Create(searchUrl);
+            var loginUrl = host + "/auth/login";
+			var loginRequest = (HttpWebRequest)WebRequest.Create(loginUrl);
 
             loginRequest.Method = "POST";
             loginRequest.ContentType = "application/x-www-form-urlencoded";
