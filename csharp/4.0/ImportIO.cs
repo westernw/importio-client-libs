@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Net;
 using System.IO;
+using System.Text;
 using System.Web;
-using System.Net;
 
 // Download the Newtonsoft JSON library here http://james.newtonking.com/projects/json-net.aspx
 using Newtonsoft.Json;
@@ -14,31 +12,28 @@ using System.Collections.Concurrent;
 
 namespace MinimalCometLibrary
 {
-    delegate void QueryHandler(Query query, Dictionary<String, Object> data);
+    public delegate void QueryHandler(Query query, Dictionary<string, object> data);
 
-    class Query
+    public class Query
     {
-        int jobsCompleted = 0;
-        int jobsStarted = 0;
-        int jobsSpawned = 0;
-        private bool finished = false;
+        private readonly QueryHandler queryCallback;
 
-        public bool isFinished { get { return finished; } set { finished = value; } }
-        public QueryHandler queryCallback;
+        private int jobsCompleted;
+        private int jobsStarted;
+        private int jobsSpawned;
 
-        Dictionary<String, Object> queryInput;
-
-        public Query(Dictionary<String, Object> queryInput, QueryHandler queryCallback)
+        public Query(QueryHandler queryCallback)
         {
-            this.queryInput = queryInput;
             this.queryCallback = queryCallback;
         }
 
-        public void OnMessage(Dictionary<String, Object> data)
-        {
-            String messageType = (String)data["type"];
+        public bool IsFinished { get; private set; }
 
-            Console.WriteLine((String)data["type"]);
+        public void OnMessage(Dictionary<string, object> data)
+        {
+            var messageType = (string)data["type"];
+
+            Console.WriteLine((string)data["type"]);
 
             switch (messageType)
             {
@@ -54,55 +49,46 @@ namespace MinimalCometLibrary
                     break;
             }
 
-            finished = jobsStarted == jobsCompleted && jobsSpawned + 1 == jobsStarted && jobsStarted > 0;
+            IsFinished = jobsStarted == jobsCompleted && jobsSpawned + 1 == jobsStarted && jobsStarted > 0;
 
             if (messageType.Equals("ERROR") || messageType.Equals("UNAUTH") || messageType.Equals("CANCEL"))
             {
-                finished = true;
+                IsFinished = true;
             }
 
             queryCallback(this, data);
         }
-
     }
 
-    class ImportIO
+    public class ImportIO
     {
-        private String host { get; set; }
-        private int port { get; set; }
+        private const string MessagingChannel = "/messaging";
+
+        private readonly string apiKey;
+        private readonly string url;
+        private readonly CookieContainer cookieContainer = new CookieContainer();
+        private readonly Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
+        private readonly BlockingCollection<Dictionary<string, object>> messageQueue = new BlockingCollection<Dictionary<string, object>>();
 
         private Guid userGuid;
-        private String apiKey;
+        private int msgId;
+        private string clientId;
+        private bool isConnected;
 
-        private static String messagingChannel = "/messaging";
-        private String url;
-
-        private int msgId = 0;
-        private String clientId;
-
-        private Boolean isConnected;
-
-        CookieContainer cookieContainer = new CookieContainer();
-
-        Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
-
-        private BlockingCollection<Dictionary<String, Object>> messageQueue = new BlockingCollection<Dictionary<string,object>>();
-
-        public ImportIO(String host = "http://query.import.io", Guid userGuid = default(Guid), String apiKey = null)
+        public ImportIO(string host = "https://query.import.io", Guid userGuid = default(Guid), string apiKey = null)
         {
             this.userGuid = userGuid;
             this.apiKey = apiKey;
 
-            this.url = host + "/query/comet/";
+            url = host + "/query/comet/";
             clientId = null;
         }
 
-        public void Login(String username, String password, String host = "http://api.import.io")
+        public void Login(string username, string password, string host = "https://api.import.io")
         {
-            Console.WriteLine("Logging in");
-            String loginParams = "username=" + HttpUtility.UrlEncode(username) + "&password=" + HttpUtility.UrlEncode(password);
-            String searchUrl = host + "/auth/login";
-            HttpWebRequest loginRequest = (HttpWebRequest)WebRequest.Create(searchUrl);
+            var loginParams = "username=" + HttpUtility.UrlEncode(username) + "&password=" + HttpUtility.UrlEncode(password);
+            var loginUrl = host + "/auth/login";
+			var loginRequest = (HttpWebRequest)WebRequest.Create(loginUrl);
 
             loginRequest.Method = "POST";
             loginRequest.ContentType = "application/x-www-form-urlencoded";
@@ -110,142 +96,209 @@ namespace MinimalCometLibrary
 
             loginRequest.CookieContainer = cookieContainer;
 
-            using (Stream dataStream = loginRequest.GetRequestStream())
+            using (var dataStream = loginRequest.GetRequestStream())
             {
-                dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(loginParams), 0, loginParams.Length);
+                dataStream.Write(Encoding.UTF8.GetBytes(loginParams), 0, loginParams.Length);
 
-                HttpWebResponse loginResponse = (HttpWebResponse)loginRequest.GetResponse();
-
+                var loginResponse = (HttpWebResponse)loginRequest.GetResponse();
 
                 if (loginResponse.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception("Could not log in, code:" + loginResponse.StatusCode);
                 }
-                else
-                {
-                    foreach (Cookie cookie in loginResponse.Cookies)
+            }
+        }
+
+        public void Connect()
+        {
+            if (isConnected)
+            {
+                return;
+            }
+            
+            Handshake();
+
+            var subscribeData = new Dictionary<string, object> { { "subscription", MessagingChannel } };
+            Request("/meta/subscribe", subscribeData);
+
+            isConnected = true;
+
+            new Thread(Poll).Start();
+
+            new Thread(PollQueue).Start();
+        }
+
+        public List<string> AuthenticateConnector(string connectorGuid, string connectorAuthDomain, string domainUsername, string domainPassword)
+        {
+            var requestUrl = string.Format("https://api.import.io/store/connector/{0}/_query", connectorGuid);
+            requestUrl = AppendApiKey(requestUrl);
+
+            var data = new Dictionary<string, object>
+            {
+                { "loginOnly", true },
+                { "additionalInput", new Dictionary<string, object>
                     {
-                        if (cookie.Name.Equals("AUTH"))
-                        {
-                            // Login was successful
-                            Console.WriteLine("Login Successful");
+                        { connectorGuid, new Dictionary<string, object>
+                            {
+                                { "domainCredentials", new Dictionary<string, object>
+                                    {
+                                        { connectorAuthDomain, new Dictionary<string, object>
+                                            {
+                                                { "username", domainUsername },
+                                                { "password", domainPassword }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+                }
+            };
 
+            var dataJson = JsonConvert.SerializeObject(data);
+            var request = BuildWebRequest(requestUrl, dataJson);
+
+            using (var response = (HttpWebResponse)request.GetResponse())
+            {
+                using (var responseStream = new StreamReader(response.GetResponseStream()))
+                {
+                    var responseJson = responseStream.ReadToEnd();
+                    var responseList = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseJson);
+
+                    return JsonConvert.DeserializeObject<List<string>>(responseList["cookies"].ToString());
                 }
             }
         }
 
-        public List<Dictionary<String, Object>> Request(String channel, Dictionary<String, Object> data = null, String path = "", Boolean doThrow = true)
+        public void DoQuery(Dictionary<string, object> query, QueryHandler queryHandler)
         {
-            Dictionary<String, Object> dataPacket = new Dictionary<String, Object>();
-            dataPacket.Add("channel", channel);
-            dataPacket.Add("connectionType", "long-polling");
-            dataPacket.Add("id", (msgId++).ToString());
+            var requestId = Guid.NewGuid();
+            queries.Add(requestId, new Query(queryHandler));
+            query.Add("requestId", requestId);
+            Request("/service/query", new Dictionary<string, object> { { "data", query } });
+        }
 
-            if (this.clientId != null)
-                dataPacket.Add("clientId", this.clientId);
+        public void Disconnect()
+        {
+            Request("/meta/disconnect");
+            isConnected = false;
+        }
+
+        private void Handshake()
+        {
+            var handshakeData = new Dictionary<string, object>();
+            handshakeData.Add("version", "1.0");
+            handshakeData.Add("minimumVersion", "0.9");
+            handshakeData.Add("supportedConnectionTypes", new List<string> { "long-polling" });
+            handshakeData.Add("advice", new Dictionary<string, int> { { "timeout", 60000 }, { "interval", 0 } });
+            var responseList = Request("/meta/handshake", handshakeData, "handshake");
+            clientId = (string)responseList[0]["clientId"];
+        }
+
+        private List<Dictionary<string, object>> Request(
+            string channel,
+            Dictionary<string, object> data = null,
+            string path = "",
+            bool doThrow = true)
+        {
+            var dataPacket = new Dictionary<string, object>
+                             {
+                                 { "channel", channel },
+                                 { "connectionType", "long-polling" },
+                                 { "id", (msgId++).ToString() }
+                             };
+
+            if (clientId != null)
+            {
+                dataPacket.Add("clientId", clientId);
+            }
 
             if (data != null)
             {
-                foreach (KeyValuePair<String, Object> entry in data)
+                foreach (var entry in data)
                 {
                     dataPacket.Add(entry.Key, entry.Value);
                 }
             }
 
-            String url = this.url + path;
+            var requestUrl = url + path;
 
-            if (apiKey != null)
+            requestUrl = AppendApiKey(requestUrl);
+
+            var dataJson = JsonConvert.SerializeObject(new List<object> { dataPacket });
+
+            var request = BuildWebRequest(requestUrl, dataJson);
+
+            try
             {
-                url += "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey=" + HttpUtility.UrlEncode(apiKey);
-            }
+                var response = (HttpWebResponse)request.GetResponse();
 
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                using (var responseStream = new StreamReader(response.GetResponseStream()))
+                {
+                    var responseJson = responseStream.ReadToEnd();
+                    var responseList = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(responseJson);
+                    foreach (var responseDict in responseList)
+                    {
+                        if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
+                        {
+                            if (doThrow)
+                            {
+                                throw new Exception("Unsuccessful request");
+                            }
+                        }
+
+                        if (!responseDict["channel"].Equals(MessagingChannel))
+                        {
+                            continue;
+                        }
+
+                        if (responseDict.ContainsKey("data"))
+                        {
+                            messageQueue.Add(
+                                ((Newtonsoft.Json.Linq.JObject)responseDict["data"])
+                                    .ToObject<Dictionary<string, object>>());
+                        }
+                    }
+
+                    return responseList;
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error occurred {0}", exception.Message);
+
+                return new List<Dictionary<string, object>>();
+            }
+        }
+
+        private HttpWebRequest BuildWebRequest(string requestUrl, string dataJson)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(requestUrl);
             request.AutomaticDecompression = DecompressionMethods.GZip;
             request.Method = "POST";
             request.ContentType = "application/json;charset=UTF-8";
             request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip");
-            String dataJson = JsonConvert.SerializeObject(new List<Object>() { dataPacket });
-
             request.ContentLength = dataJson.Length;
-
             request.CookieContainer = cookieContainer;
 
-            using (Stream dataStream = request.GetRequestStream())
+            using (var dataStream = request.GetRequestStream())
             {
-                dataStream.Write(System.Text.UTF8Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
-                try
-                {
-                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-
-                    using (StreamReader responseStream = new StreamReader(response.GetResponseStream()))
-                    {
-                        String responseJson = responseStream.ReadToEnd();
-                        List<Dictionary<String, Object>> responseList = JsonConvert.DeserializeObject<List<Dictionary<String, Object>>>(responseJson);
-                        foreach (Dictionary<String, Object> responseDict in responseList)
-                        {
-                            if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
-                            {
-                                if (doThrow)
-                                    throw new Exception("Unsucessful request");
-                            }
-
-                            if (!responseDict["channel"].Equals(messagingChannel)) continue;
-
-                            if (responseDict.ContainsKey("data"))
-                            {
-                                messageQueue.Add(((Newtonsoft.Json.Linq.JObject)responseDict["data"]).ToObject<Dictionary<String, Object>>());
-                            }
-
-                        }
-
-                        return responseList;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Error occurred {0}", e.Message);
-                    return new List<Dictionary<String, Object>>();
-                }
-                
+                dataStream.Write(Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
             }
+
+            return request;
         }
 
-        public void Handshake()
+        private string AppendApiKey(string requestUrl)
         {
-            Dictionary<String, Object> handshakeData = new Dictionary<String, Object>();
-            handshakeData.Add("version", "1.0");
-            handshakeData.Add("minimumVersion", "0.9");
-            handshakeData.Add("supportedConnectionTypes", new List<String> { "long-polling" });
-            handshakeData.Add("advice", new Dictionary<String, int>() { { "timeout", 60000 }, { "interval", 0 } });
-            List<Dictionary<String, Object>> responseList = Request("/meta/handshake", handshakeData, "handshake");
-            clientId = (String)responseList[0]["clientId"];
-        }
-
-        public void Connect()
-        {
-            if(isConnected) {
-                return ;
+            if (apiKey != null)
+            {
+                requestUrl += "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey="
+                              + HttpUtility.UrlEncode(apiKey);
             }
-            
-            Handshake();
 
-            Dictionary<String, Object> subscribeData = new Dictionary<string, object>();
-            subscribeData.Add("subscription", messagingChannel);
-            Request("/meta/subscribe", subscribeData);
-
-            isConnected = true;
-
-            new Thread(new ThreadStart(Poll)).Start();
-
-            new Thread(new ThreadStart(PollQueue)).Start();
-        }
-
-        public void Disconnect()
-        {
-            Request("/meta/disconnect", null, "", true);
-            isConnected = false;
+            return requestUrl;
         }
 
         private void Poll()
@@ -264,26 +317,16 @@ namespace MinimalCometLibrary
             }
         }
 
-        private void ProcessMessage(Dictionary<String, Object> data)
+        private void ProcessMessage(Dictionary<string, object> data)
         {
-            Guid requestId = Guid.Parse((String)data["requestId"]);
-            Query query = queries[requestId];
+            var requestId = Guid.Parse((string)data["requestId"]);
+            var query = queries[requestId];
 
             query.OnMessage(data);
-            if (query.isFinished)
+            if (query.IsFinished)
             {
                 queries.Remove(requestId);
             }
         }
-
-        public void DoQuery(Dictionary<String, Object> query, QueryHandler queryHandler)
-        {
-            Guid requestId = Guid.NewGuid();
-            queries.Add(requestId, new Query(query, queryHandler));
-            query.Add("requestId", requestId);
-            Request("/service/query", new Dictionary<String, Object>() { { "data", query } });
-        }
-
-
     }
 }
