@@ -1,10 +1,10 @@
-﻿using System;
+#undef TRACE
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.IO;
 using System.Text;
 using System.Web;
-
 // Download the Newtonsoft JSON library here http://james.newtonking.com/projects/json-net.aspx
 using Newtonsoft.Json;
 using System.Threading;
@@ -32,9 +32,9 @@ namespace MinimalCometLibrary
         public void OnMessage(Dictionary<string, object> data)
         {
             var messageType = (string)data["type"];
-
+#if TRACE
             Console.WriteLine((string)data["type"]);
-
+#endif
             switch (messageType)
             {
                 case "SPAWN":
@@ -48,14 +48,14 @@ namespace MinimalCometLibrary
                     jobsCompleted++;
                     break;
             }
-
-            IsFinished = jobsStarted == jobsCompleted && jobsSpawned + 1 == jobsStarted && jobsStarted > 0;
-
             if (messageType.Equals("ERROR") || messageType.Equals("UNAUTH") || messageType.Equals("CANCEL"))
             {
                 IsFinished = true;
             }
-
+            else
+            {
+                IsFinished = jobsStarted == jobsCompleted && jobsSpawned + 1 == jobsStarted && jobsStarted > 0;
+            }
             queryCallback(this, data);
         }
     }
@@ -69,31 +69,28 @@ namespace MinimalCometLibrary
         private readonly CookieContainer cookieContainer = new CookieContainer();
         private readonly Dictionary<Guid, Query> queries = new Dictionary<Guid, Query>();
         private readonly BlockingCollection<Dictionary<string, object>> messageQueue = new BlockingCollection<Dictionary<string, object>>();
-
-        private Guid userGuid;
+        
         private int msgId;
         private string clientId;
         private bool isConnected;
+        private readonly string requestAppendKey;
 
         public ImportIO(string host = "https://query.import.io", Guid userGuid = default(Guid), string apiKey = null)
         {
-            this.userGuid = userGuid;
             this.apiKey = apiKey;
-
             url = host + "/query/comet/";
             clientId = null;
+            requestAppendKey = "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey=" + HttpUtility.UrlEncode(this.apiKey);
         }
-
         public void Login(string username, string password, string host = "https://api.import.io")
         {
             var loginParams = "username=" + HttpUtility.UrlEncode(username) + "&password=" + HttpUtility.UrlEncode(password);
             var loginUrl = host + "/auth/login";
-			var loginRequest = (HttpWebRequest)WebRequest.Create(loginUrl);
+            var loginRequest = (HttpWebRequest)WebRequest.Create(loginUrl);
 
             loginRequest.Method = "POST";
             loginRequest.ContentType = "application/x-www-form-urlencoded";
             loginRequest.ContentLength = loginParams.Length;
-
             loginRequest.CookieContainer = cookieContainer;
 
             using (var dataStream = loginRequest.GetRequestStream())
@@ -115,7 +112,7 @@ namespace MinimalCometLibrary
             {
                 return;
             }
-            
+
             Handshake();
 
             var subscribeData = new Dictionary<string, object> { { "subscription", MessagingChannel } };
@@ -123,11 +120,9 @@ namespace MinimalCometLibrary
 
             isConnected = true;
 
-            new Thread(Poll).Start();
-
-            new Thread(PollQueue).Start();
+            new Thread(Poll){IsBackground = true}.Start();
+            new Thread(PollQueue){ IsBackground = true }.Start();
         }
-
         public List<string> AuthenticateConnector(string connectorGuid, string connectorAuthDomain, string domainUsername, string domainPassword)
         {
             var requestUrl = string.Format("https://api.import.io/store/connector/{0}/_query", connectorGuid);
@@ -160,15 +155,13 @@ namespace MinimalCometLibrary
             var request = BuildWebRequest(requestUrl, dataJson);
 
             using (var response = (HttpWebResponse)request.GetResponse())
+            using (var responseStream = new StreamReader(response.GetResponseStream()))
             {
-                using (var responseStream = new StreamReader(response.GetResponseStream()))
-                {
-                    var responseJson = responseStream.ReadToEnd();
-                    var responseList = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseJson);
-
-                    return JsonConvert.DeserializeObject<List<string>>(responseList["cookies"].ToString());
-                }
+                var responseJson = responseStream.ReadToEnd();
+                var responseList = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseJson);
+                return JsonConvert.DeserializeObject<List<string>>(responseList["cookies"].ToString());
             }
+            
         }
 
         public void DoQuery(Dictionary<string, object> query, QueryHandler queryHandler)
@@ -187,27 +180,29 @@ namespace MinimalCometLibrary
 
         private void Handshake()
         {
-            var handshakeData = new Dictionary<string, object>();
-            handshakeData.Add("version", "1.0");
-            handshakeData.Add("minimumVersion", "0.9");
-            handshakeData.Add("supportedConnectionTypes", new List<string> { "long-polling" });
-            handshakeData.Add("advice", new Dictionary<string, int> { { "timeout", 60000 }, { "interval", 0 } });
+            var handshakeData = new Dictionary<string, object>
+            {
+                {"version", "1.0"},
+                {"minimumVersion", "0.9"},
+                {"supportedConnectionTypes", new List<string> {"long-polling"}},
+                {"advice", new Dictionary<string, int> {{"timeout", 60000}, {"interval", 0}}}
+            };
             var responseList = Request("/meta/handshake", handshakeData, "handshake");
             clientId = (string)responseList[0]["clientId"];
         }
 
         private List<Dictionary<string, object>> Request(
-            string channel,
-            Dictionary<string, object> data = null,
-            string path = "",
-            bool doThrow = true)
+        string channel,
+        Dictionary<string, object> data = null,
+        string path = "",
+        bool doThrow = true)
         {
             var dataPacket = new Dictionary<string, object>
-                             {
-                                 { "channel", channel },
-                                 { "connectionType", "long-polling" },
-                                 { "id", (msgId++).ToString() }
-                             };
+            {
+                { "channel", channel },
+                { "connectionType", "long-polling" },
+                { "id", (msgId++).ToString() }
+            };
 
             if (clientId != null)
             {
@@ -232,27 +227,24 @@ namespace MinimalCometLibrary
 
             try
             {
-                var response = (HttpWebResponse)request.GetResponse();
-
+                using (var response = (HttpWebResponse) request.GetResponse())
                 using (var responseStream = new StreamReader(response.GetResponseStream()))
                 {
                     var responseJson = responseStream.ReadToEnd();
                     var responseList = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(responseJson);
                     foreach (var responseDict in responseList)
                     {
-                        if (responseDict.ContainsKey("successful") && (bool)responseDict["successful"] != true)
+                        if (responseDict.ContainsKey("successful") && (bool) responseDict["successful"] != true)
                         {
                             if (doThrow)
                             {
                                 throw new Exception("Unsuccessful request");
                             }
                         }
-
                         if (!responseDict["channel"].Equals(MessagingChannel))
                         {
                             continue;
                         }
-
                         if (responseDict.ContainsKey("data"))
                         {
                             messageQueue.Add(
@@ -260,14 +252,14 @@ namespace MinimalCometLibrary
                                     .ToObject<Dictionary<string, object>>());
                         }
                     }
-
                     return responseList;
                 }
             }
             catch (Exception exception)
             {
+#if TRACE
                 Console.WriteLine("Error occurred {0}", exception.Message);
-
+#endif
                 return new List<Dictionary<string, object>>();
             }
         }
@@ -281,12 +273,10 @@ namespace MinimalCometLibrary
             request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip");
             request.ContentLength = dataJson.Length;
             request.CookieContainer = cookieContainer;
-
             using (var dataStream = request.GetRequestStream())
             {
                 dataStream.Write(Encoding.UTF8.GetBytes(dataJson), 0, dataJson.Length);
             }
-
             return request;
         }
 
@@ -294,10 +284,8 @@ namespace MinimalCometLibrary
         {
             if (apiKey != null)
             {
-                requestUrl += "?_user=" + HttpUtility.UrlEncode(userGuid.ToString()) + "&_apikey="
-                              + HttpUtility.UrlEncode(apiKey);
+                requestUrl = String.Concat(requestUrl, requestAppendKey);
             }
-
             return requestUrl;
         }
 
@@ -320,12 +308,14 @@ namespace MinimalCometLibrary
         private void ProcessMessage(Dictionary<string, object> data)
         {
             var requestId = Guid.Parse((string)data["requestId"]);
-            var query = queries[requestId];
-
-            query.OnMessage(data);
-            if (query.IsFinished)
+            Query query;
+            if (queries.TryGetValue(requestId, out query))
             {
-                queries.Remove(requestId);
+                query.OnMessage(data);
+                if (query.IsFinished)
+                {
+                    queries.Remove(requestId);
+                }
             }
         }
     }
